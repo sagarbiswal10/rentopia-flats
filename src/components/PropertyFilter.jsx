@@ -1,227 +1,219 @@
 
 import React, { useState } from 'react';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { formatIndianRupees } from '@/utils/formatters';
-import { Check, Sliders } from 'lucide-react';
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 const PropertyFilter = ({ onFilterChange }) => {
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filters, setFilters] = useState({
-    propertyType: [],
-    bedrooms: [],
-    furnishing: [],
-    minRent: 5000,
-    maxRent: 100000,
-    minArea: 300,
-    maxArea: 3000,
-    amenities: []
-  });
-
-  const propertyTypes = ["Apartment", "Independent House", "Villa", "PG/Hostel"];
-  const bedroomOptions = ["1 RK", "1 BHK", "2 BHK", "3 BHK", "4 BHK", "4+ BHK"];
-  const furnishingOptions = ["Fully-Furnished", "Semi-Furnished", "Unfurnished"];
-  const amenityOptions = [
-    "Lift", "Parking", "Security", "Gym", "Swimming Pool", 
-    "Power Backup", "Gas Pipeline", "Club House", "WiFi"
-  ];
-
-  const toggleFilter = (category, value) => {
-    setFilters(prev => {
-      const updated = { ...prev };
-      if (updated[category].includes(value)) {
-        updated[category] = updated[category].filter(item => item !== value);
+  const [propertyType, setPropertyType] = useState([]);
+  const [bedrooms, setBedrooms] = useState([]);
+  const [minRent, setMinRent] = useState('');
+  const [maxRent, setMaxRent] = useState('');
+  const [furnishing, setFurnishing] = useState([]);
+  const [amenities, setAmenities] = useState([]);
+  
+  const handlePropertyTypeChange = (type) => {
+    setPropertyType(prev => {
+      if (prev.includes(type)) {
+        return prev.filter(item => item !== type);
       } else {
-        updated[category] = [...updated[category], value];
+        return [...prev, type];
       }
-      return updated;
     });
   };
-
-  const handleRentChange = (value) => {
-    setFilters(prev => ({
-      ...prev,
-      minRent: value[0],
-      maxRent: value[1]
-    }));
+  
+  const handleBedroomsChange = (bhk) => {
+    setBedrooms(prev => {
+      if (prev.includes(bhk)) {
+        return prev.filter(item => item !== bhk);
+      } else {
+        return [...prev, bhk];
+      }
+    });
   };
-
-  const handleAreaChange = (value) => {
-    setFilters(prev => ({
-      ...prev,
-      minArea: value[0],
-      maxArea: value[1]
-    }));
+  
+  const handleFurnishingChange = (type) => {
+    setFurnishing(prev => {
+      if (prev.includes(type)) {
+        return prev.filter(item => item !== type);
+      } else {
+        return [...prev, type];
+      }
+    });
   };
-
-  const applyFilters = () => {
+  
+  const handleAmenitiesChange = (amenity) => {
+    setAmenities(prev => {
+      if (prev.includes(amenity)) {
+        return prev.filter(item => item !== amenity);
+      } else {
+        return [...prev, amenity];
+      }
+    });
+  };
+  
+  const handleApplyFilters = () => {
+    const filters = {
+      propertyType: propertyType.length > 0 ? propertyType : null,
+      bedrooms: bedrooms.length > 0 ? bedrooms : null,
+      minRent: minRent ? parseInt(minRent, 10) : null,
+      maxRent: maxRent ? parseInt(maxRent, 10) : null,
+      furnishing: furnishing.length > 0 ? furnishing : null,
+      amenities: amenities.length > 0 ? amenities : null,
+    };
+    
     onFilterChange(filters);
-    if (window.innerWidth < 768) {
-      setIsFilterOpen(false);
-    }
   };
-
-  const resetFilters = () => {
-    setFilters({
-      propertyType: [],
-      bedrooms: [],
-      furnishing: [],
-      minRent: 5000,
-      maxRent: 100000,
-      minArea: 300,
-      maxArea: 3000,
-      amenities: []
-    });
+  
+  const handleClearFilters = () => {
+    setPropertyType([]);
+    setBedrooms([]);
+    setMinRent('');
+    setMaxRent('');
+    setFurnishing([]);
+    setAmenities([]);
+    
     onFilterChange({});
   };
-
+  
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-        <h3 className="text-lg font-medium">Filters</h3>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="md:hidden"
-          onClick={() => setIsFilterOpen(!isFilterOpen)}
-        >
-          <Sliders className="h-5 w-5 mr-1" />
-          {isFilterOpen ? 'Hide' : 'Show'}
-        </Button>
-      </div>
-
-      <div className={`${isFilterOpen ? 'block' : 'hidden'} md:block`}>
+    <div className="bg-white rounded-lg shadow-sm p-4">
+      <h2 className="text-lg font-semibold mb-4">Filters</h2>
+      
+      <Accordion type="multiple" defaultValue={["property-type", "bedrooms", "budget", "furnishing", "amenities"]}>
         {/* Property Type */}
-        <div className="p-4 border-b border-gray-200">
-          <h4 className="font-medium mb-3">Property Type</h4>
-          <div className="space-y-2">
-            {propertyTypes.map((type) => (
-              <div key={type} className="flex items-center">
-                <button
-                  type="button"
-                  className={`w-5 h-5 rounded border mr-2 flex items-center justify-center ${
-                    filters.propertyType.includes(type) ? 'bg-primary border-primary' : 'border-gray-300'
-                  }`}
-                  onClick={() => toggleFilter('propertyType', type)}
-                >
-                  {filters.propertyType.includes(type) && (
-                    <Check className="h-3.5 w-3.5 text-white" />
-                  )}
-                </button>
-                <Label htmlFor={`property-${type}`} className="cursor-pointer">
-                  {type}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Bedrooms */}
-        <div className="p-4 border-b border-gray-200">
-          <h4 className="font-medium mb-3">Bedrooms</h4>
-          <div className="flex flex-wrap gap-2">
-            {bedroomOptions.map((option) => (
-              <Button
-                key={option}
-                variant={filters.bedrooms.includes(option) ? 'default' : 'outline'}
-                className={`${
-                  filters.bedrooms.includes(option) ? 'bg-primary text-white' : 'text-gray-700'
-                } text-sm py-1 h-auto`}
-                onClick={() => toggleFilter('bedrooms', option)}
-              >
-                {option}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Rent Range */}
-        <div className="p-4 border-b border-gray-200">
-          <h4 className="font-medium mb-3">Rent Range</h4>
-          <div className="px-2">
-            <Slider
-              defaultValue={[filters.minRent, filters.maxRent]}
-              min={5000}
-              max={100000}
-              step={1000}
-              onValueChange={handleRentChange}
-              className="mb-6"
-            />
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>{formatIndianRupees(filters.minRent)}</span>
-              <span>{formatIndianRupees(filters.maxRent)}</span>
+        <AccordionItem value="property-type">
+          <AccordionTrigger className="text-base font-medium">Property Type</AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-2">
+              {["Apartment", "Villa", "Independent House", "PG/Hostel"].map((type) => (
+                <div className="flex items-center space-x-2" key={type}>
+                  <Checkbox 
+                    id={`type-${type}`} 
+                    checked={propertyType.includes(type)}
+                    onCheckedChange={() => handlePropertyTypeChange(type)}
+                  />
+                  <Label htmlFor={`type-${type}`} className="text-sm">{type}</Label>
+                </div>
+              ))}
             </div>
-          </div>
-        </div>
-
+          </AccordionContent>
+        </AccordionItem>
+        
+        {/* Bedrooms */}
+        <AccordionItem value="bedrooms">
+          <AccordionTrigger className="text-base font-medium">Bedrooms</AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-2">
+              {["1 RK", "1 BHK", "2 BHK", "3 BHK", "4 BHK", "4+ BHK"].map((bhk) => (
+                <div className="flex items-center space-x-2" key={bhk}>
+                  <Checkbox 
+                    id={`bhk-${bhk}`} 
+                    checked={bedrooms.includes(bhk)}
+                    onCheckedChange={() => handleBedroomsChange(bhk)}
+                  />
+                  <Label htmlFor={`bhk-${bhk}`} className="text-sm">{bhk}</Label>
+                </div>
+              ))}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+        
+        {/* Budget */}
+        <AccordionItem value="budget">
+          <AccordionTrigger className="text-base font-medium">Budget</AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="min-rent" className="text-sm">Min Rent (₹)</Label>
+                <Input
+                  id="min-rent"
+                  type="number"
+                  placeholder="Min"
+                  value={minRent}
+                  onChange={(e) => setMinRent(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="max-rent" className="text-sm">Max Rent (₹)</Label>
+                <Input
+                  id="max-rent"
+                  type="number"
+                  placeholder="Max"
+                  value={maxRent}
+                  onChange={(e) => setMaxRent(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+        
         {/* Furnishing */}
-        <div className="p-4 border-b border-gray-200">
-          <h4 className="font-medium mb-3">Furnishing</h4>
-          <div className="space-y-2">
-            {furnishingOptions.map((option) => (
-              <div key={option} className="flex items-center">
-                <button
-                  type="button"
-                  className={`w-5 h-5 rounded border mr-2 flex items-center justify-center ${
-                    filters.furnishing.includes(option) ? 'bg-primary border-primary' : 'border-gray-300'
-                  }`}
-                  onClick={() => toggleFilter('furnishing', option)}
-                >
-                  {filters.furnishing.includes(option) && (
-                    <Check className="h-3.5 w-3.5 text-white" />
-                  )}
-                </button>
-                <Label htmlFor={`furnishing-${option}`} className="cursor-pointer">
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </div>
-
+        <AccordionItem value="furnishing">
+          <AccordionTrigger className="text-base font-medium">Furnishing</AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-2">
+              {["Fully Furnished", "Semi-Furnished", "Unfurnished"].map((type) => (
+                <div className="flex items-center space-x-2" key={type}>
+                  <Checkbox 
+                    id={`furnishing-${type}`} 
+                    checked={furnishing.includes(type)}
+                    onCheckedChange={() => handleFurnishingChange(type)}
+                  />
+                  <Label htmlFor={`furnishing-${type}`} className="text-sm">{type}</Label>
+                </div>
+              ))}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+        
         {/* Amenities */}
-        <div className="p-4 border-b border-gray-200">
-          <h4 className="font-medium mb-3">Amenities</h4>
-          <div className="grid grid-cols-2 gap-2">
-            {amenityOptions.map((option) => (
-              <div key={option} className="flex items-center">
-                <button
-                  type="button"
-                  className={`w-5 h-5 rounded border mr-2 flex items-center justify-center ${
-                    filters.amenities.includes(option) ? 'bg-primary border-primary' : 'border-gray-300'
-                  }`}
-                  onClick={() => toggleFilter('amenities', option)}
-                >
-                  {filters.amenities.includes(option) && (
-                    <Check className="h-3.5 w-3.5 text-white" />
-                  )}
-                </button>
-                <Label htmlFor={`amenity-${option}`} className="cursor-pointer text-sm">
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="p-4 flex space-x-3">
-          <Button 
-            onClick={applyFilters}
-            className="flex-1 bg-primary hover:bg-primary/90"
-          >
-            Apply Filters
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={resetFilters}
-            className="flex-1"
-          >
-            Reset
-          </Button>
-        </div>
+        <AccordionItem value="amenities">
+          <AccordionTrigger className="text-base font-medium">Amenities</AccordionTrigger>
+          <AccordionContent>
+            <div className="space-y-2">
+              {[
+                "Lift", "Power Backup", "Security", "Parking", 
+                "Gym", "Swimming Pool", "Garden", "Club House"
+              ].map((amenity) => (
+                <div className="flex items-center space-x-2" key={amenity}>
+                  <Checkbox 
+                    id={`amenity-${amenity}`} 
+                    checked={amenities.includes(amenity)}
+                    onCheckedChange={() => handleAmenitiesChange(amenity)}
+                  />
+                  <Label htmlFor={`amenity-${amenity}`} className="text-sm">{amenity}</Label>
+                </div>
+              ))}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+      
+      <div className="mt-6 space-y-2">
+        <Button 
+          className="w-full bg-primary hover:bg-primary/90"
+          onClick={handleApplyFilters}
+        >
+          Apply Filters
+        </Button>
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={handleClearFilters}
+        >
+          Clear All
+        </Button>
       </div>
     </div>
   );

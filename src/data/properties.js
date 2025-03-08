@@ -2,120 +2,120 @@
 export const properties = [
   {
     id: 1,
-    title: "Modern 3BHK Apartment in Whitefield",
-    description: "Spacious 3BHK apartment with modern amenities, 24/7 security, and power backup. Located close to tech parks and shopping malls.",
+    title: "Spacious 3 BHK Apartment with Garden View",
     type: "Apartment",
     bedrooms: 3,
     bathrooms: 2,
     furnishing: "Semi-Furnished",
-    area: 1350,
-    rent: 32000,
+    area: 1250,
+    rent: 30000,
     deposit: 100000,
-    address: "Palm Meadows, Whitefield, Bangalore, Karnataka",
-    locality: "Whitefield",
+    address: "Orchid Apartment, Palm Avenue, Koramangala, Bangalore, Karnataka",
+    locality: "Koramangala",
     city: "Bangalore",
     state: "Karnataka",
     availableFrom: "2023-07-15",
-    preferred: "Family/Bachelors",
+    preferred: "Family",
     amenities: [
-      "Gym",
-      "Swimming Pool",
-      "Parking",
-      "Lift",
-      "Security",
-      "Power Backup",
-      "Club House"
+      "Power Backup", 
+      "Lift", 
+      "Security", 
+      "Garden", 
+      "Gym", 
+      "Swimming Pool", 
+      "Parking"
     ],
+    description: "Beautiful 3 bedroom apartment in a gated community with 24/7 security. The apartment is semi-furnished with wardrobes in all bedrooms, modular kitchen with chimney and hob, and air conditioners in the living room and master bedroom.\n\nThe society has a swimming pool, gym, children's play area, and well-maintained garden. It is located close to schools, hospitals, and shopping malls, making it an ideal place for families.",
     images: [
-      "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1560448204-603b3fc33ddc?w=800&auto=format&fit=crop"
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1484154218962-a197022b5858?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80"
     ],
-    featured: true,
     owner: {
       name: "Rajesh Kumar",
-      phone: "+91 98765 43210",
+      phone: "9876543210",
       email: "rajesh@example.com"
     }
   },
   {
     id: 2,
-    title: "Cozy 2BHK Near Indiranagar Metro",
-    description: "Well-maintained 2BHK apartment with balcony and modern kitchen. Walking distance to Indiranagar Metro Station and 100ft Road.",
+    title: "Modern 2 BHK Flat with Balcony",
     type: "Apartment",
     bedrooms: 2,
     bathrooms: 2,
-    furnishing: "Fully-Furnished",
+    furnishing: "Fully Furnished",
     area: 950,
-    rent: 28000,
-    deposit: 80000,
-    address: "12th Main, Indiranagar, Bangalore, Karnataka",
+    rent: 25000,
+    deposit: 75000,
+    address: "Maple Heights, MG Road, Indiranagar, Bangalore, Karnataka",
     locality: "Indiranagar",
     city: "Bangalore",
     state: "Karnataka",
     availableFrom: "2023-06-30",
     preferred: "Bachelors/Family",
     amenities: [
-      "Parking",
-      "Lift",
-      "Security",
-      "Power Backup",
-      "WiFi"
+      "Power Backup", 
+      "Lift", 
+      "Security", 
+      "Gym", 
+      "Parking", 
+      "Club House", 
+      "CCTV"
     ],
+    description: "Fully furnished 2 BHK apartment in a prime location with modern amenities. The apartment comes with air conditioning in all rooms, fully equipped kitchen with refrigerator, microwave, and washing machine.\n\nThe flat has a spacious balcony with a great view of the city. The society has a gym, club house, and 24/7 security with CCTV surveillance. Located close to metro station, shopping centers, and restaurants.",
     images: [
-      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1560185007-cde436f6a4d0?w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1560448075-bb485b067938?w=800&auto=format&fit=crop"
+      "https://images.unsplash.com/photo-1560185127-6ed189bf02f4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1574739782594-db4ead022697?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80"
     ],
-    featured: true,
     owner: {
-      name: "Priya Sharma",
-      phone: "+91 87654 32109",
+      name: "Priya Singh",
+      phone: "8765432109",
       email: "priya@example.com"
     }
   },
   {
     id: 3,
-    title: "Luxury 4BHK Villa in Koramangala",
-    description: "Premium villa with garden, modern kitchen, and spacious rooms. Located in the heart of Koramangala, close to all amenities.",
+    title: "Luxurious 4 BHK Villa with Private Garden",
     type: "Villa",
     bedrooms: 4,
     bathrooms: 4,
-    furnishing: "Fully-Furnished",
-    area: 2400,
+    furnishing: "Unfurnished",
+    area: 2800,
     rent: 85000,
     deposit: 300000,
-    address: "80 Feet Road, Koramangala 4th Block, Bangalore, Karnataka",
-    locality: "Koramangala",
+    address: "Palm Villa, Green Park Layout, Whitefield, Bangalore, Karnataka",
+    locality: "Whitefield",
     city: "Bangalore",
     state: "Karnataka",
-    availableFrom: "2023-07-10",
+    availableFrom: "2023-07-01",
     preferred: "Family",
     amenities: [
-      "Garden",
-      "Parking",
-      "Security",
-      "Power Backup",
-      "Modular Kitchen",
-      "Swimming Pool",
-      "Gym"
+      "Power Backup", 
+      "Security", 
+      "Garden", 
+      "Parking", 
+      "Clubhouse", 
+      "Swimming Pool", 
+      "Tennis Court"
     ],
+    description: "Luxurious 4 bedroom villa in a gated community with private garden and parking space. The villa has spacious rooms with attached bathrooms, large kitchen, living and dining area, and a separate utility space.\n\nThe community has a clubhouse, swimming pool, tennis court, and 24/7 security. Located in a serene environment yet close to IT parks, international schools, hospitals, and shopping centers.",
     images: [
-      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1584738766473-61c083514bf4?w=800&auto=format&fit=crop"
+      "https://images.unsplash.com/photo-1613977257363-707ba9348227?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1613977257592-4a9a32f9141f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80"
     ],
-    featured: true,
     owner: {
-      name: "Vikram Singh",
-      phone: "+91 76543 21098",
-      email: "vikram@example.com"
+      name: "Vijay Sharma",
+      phone: "7654321098",
+      email: "vijay@example.com"
     }
   },
   {
     id: 4,
-    title: "Budget 1BHK in BTM Layout",
-    description: "Compact 1BHK apartment ideal for bachelors. Close to BTM Main Road with easy access to shops and restaurants.",
+    title: "1 BHK Apartment for Bachelors near Metro",
     type: "Apartment",
     bedrooms: 1,
     bathrooms: 1,
@@ -123,100 +123,101 @@ export const properties = [
     area: 650,
     rent: 15000,
     deposit: 50000,
-    address: "16th Main, BTM 2nd Stage, Bangalore, Karnataka",
-    locality: "BTM Layout",
+    address: "Shanthi Nivas, 4th Cross, HSR Layout, Bangalore, Karnataka",
+    locality: "HSR Layout",
     city: "Bangalore",
     state: "Karnataka",
-    availableFrom: "2023-06-25",
+    availableFrom: "2023-06-15",
     preferred: "Bachelors",
     amenities: [
-      "Parking",
-      "Security",
-      "Power Backup"
+      "Power Backup", 
+      "Lift", 
+      "Security", 
+      "Parking"
     ],
+    description: "Cozy 1 bedroom apartment perfect for bachelors or working professionals. The apartment comes with basic furniture including bed, wardrobe, dining table, and refrigerator.\n\nThe property is located just 5 minutes from the metro station, making commuting easy. Numerous restaurants, supermarkets, and convenience stores are in the vicinity.",
     images: [
-      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1502005097973-6a7082348e28?w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=800&auto=format&fit=crop"
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1630699144867-37acec97df5a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80"
     ],
-    featured: false,
     owner: {
-      name: "Ananya Reddy",
-      phone: "+91 65432 10987",
-      email: "ananya@example.com"
+      name: "Anil Reddy",
+      phone: "6543210987",
+      email: "anil@example.com"
     }
   },
   {
     id: 5,
-    title: "Spacious 3BHK Flat in HSR Layout",
-    description: "Well-designed 3BHK apartment with spacious balcony and modern interiors. Located in a quiet residential area in HSR Layout.",
+    title: "Elegant 3 BHK Apartment with Lake View",
     type: "Apartment",
     bedrooms: 3,
     bathrooms: 3,
-    furnishing: "Unfurnished",
-    area: 1500,
-    rent: 35000,
-    deposit: 120000,
-    address: "Sector 2, HSR Layout, Bangalore, Karnataka",
-    locality: "HSR Layout",
+    furnishing: "Fully Furnished",
+    area: 1800,
+    rent: 45000,
+    deposit: 150000,
+    address: "Lake View Residency, Bellandur, Bangalore, Karnataka",
+    locality: "Bellandur",
     city: "Bangalore",
     state: "Karnataka",
-    availableFrom: "2023-07-05",
+    availableFrom: "2023-07-10",
     preferred: "Family",
     amenities: [
-      "Gym",
-      "Parking",
-      "Lift",
-      "Security",
-      "Power Backup",
-      "Children's Play Area"
+      "Power Backup", 
+      "Lift", 
+      "Security", 
+      "Garden", 
+      "Gym", 
+      "Swimming Pool", 
+      "Club House", 
+      "Indoor Games"
     ],
+    description: "Elegant 3 BHK apartment with a stunning view of the lake. Fully furnished with premium furniture, appliances, and decor. The apartment features a large balcony where you can enjoy the serene lake view.\n\nThe society offers a host of amenities including swimming pool, gym, club house with indoor games, children's play area, and landscaped gardens. Located in a prime area close to major IT parks and schools.",
     images: [
-      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1567016432779-094069958ea5?w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1560448204-e02f11c3d0c2?w=800&auto=format&fit=crop"
+      "https://images.unsplash.com/photo-1515263487990-61b07816b324?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1471&q=80",
+      "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80"
     ],
-    featured: false,
     owner: {
-      name: "Arjun Nair",
-      phone: "+91 54321 09876",
-      email: "arjun@example.com"
+      name: "Meera Patel",
+      phone: "5432109876",
+      email: "meera@example.com"
     }
   },
   {
     id: 6,
-    title: "2BHK Apartment in Electronic City",
-    description: "Comfortable 2BHK apartment close to major IT companies. Well-maintained society with all basic amenities.",
+    title: "Compact 2 BHK Flat in Residential Area",
     type: "Apartment",
     bedrooms: 2,
-    bathrooms: 2,
-    furnishing: "Semi-Furnished",
-    area: 1100,
-    rent: 22000,
-    deposit: 75000,
-    address: "Phase 1, Electronic City, Bangalore, Karnataka",
-    locality: "Electronic City",
+    bathrooms: 1,
+    furnishing: "Unfurnished",
+    area: 850,
+    rent: 18000,
+    deposit: 60000,
+    address: "Green Meadows, BTM Layout, Bangalore, Karnataka",
+    locality: "BTM Layout",
     city: "Bangalore",
     state: "Karnataka",
-    availableFrom: "2023-06-20",
+    availableFrom: "2023-06-25",
     preferred: "Bachelors/Family",
     amenities: [
-      "Parking",
-      "Lift",
-      "Security",
-      "Power Backup",
-      "Gym"
+      "Power Backup", 
+      "Lift", 
+      "Security", 
+      "Parking"
     ],
+    description: "Unfurnished 2 BHK apartment in a quiet residential area. The apartment has a modular kitchen, balcony, and good ventilation. The society has power backup, lift, and covered parking space.\n\nLocated in a well-established residential area with all essential amenities like schools, hospitals, markets, and public transport facilities within walking distance.",
     images: [
-      "https://images.unsplash.com/photo-1460317442991-0ec209397118?w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1560448204-61dc36dc98c8?w=800&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1560448075-56c1ae77e69e?w=800&auto=format&fit=crop"
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80",
+      "https://images.unsplash.com/photo-1534595038511-9f219fe0c979?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80"
     ],
-    featured: false,
     owner: {
-      name: "Deepak Menon",
-      phone: "+91 43210 98765",
-      email: "deepak@example.com"
+      name: "Suresh Nair",
+      phone: "4321098765",
+      email: "suresh@example.com"
     }
   }
 ];
