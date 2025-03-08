@@ -7,7 +7,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import HomePage from "./pages/HomePage";
-import PropertiesPage from "./pages/PropertiesPage";
+import PropertiesPage from "./pages/PropertiesPage"; 
 import PropertyDetailPage from "./pages/PropertyDetailPage";
 import NotFoundPage from "./pages/NotFoundPage";
 

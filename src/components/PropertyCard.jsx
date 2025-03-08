@@ -1,56 +1,68 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { formatIndianRupees } from '@/utils/formatters';
-import { MapPin, BedDouble, Bath, SquareFootage } from 'lucide-react';
-import CustomSquareFootage from './icons/SquareFootage';
+import { Bed, Bath, MapPin, IndianRupee } from 'lucide-react';
+import SquareFootage from '@/components/icons/SquareFootage';
 
 const PropertyCard = ({ property }) => {
-  const { 
-    id, title, rent, locality, city, bedrooms, bathrooms, 
-    area, furnishing, images, preferred 
+  const {
+    id,
+    title,
+    type,
+    rent,
+    deposit,
+    bedrooms,
+    bathrooms,
+    area,
+    furnishing,
+    locality,
+    city,
+    thumbnailUrl,
+    available,
   } = property;
 
   return (
     <Link to={`/property/${id}`}>
-      <Card className="property-card overflow-hidden h-full">
+      <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
+        {/* Property Image */}
         <div className="relative">
-          <img 
-            src={images[0]} 
+          <img
+            src={thumbnailUrl || '/placeholder.svg'}
             alt={title}
-            className="h-48 w-full object-cover"
+            className="w-full h-48 object-cover"
           />
-          <Badge className="absolute top-2 right-2 bg-secondary">
-            {furnishing}
+          <Badge
+            className={`absolute top-2 right-2 ${available ? 'bg-green-500' : 'bg-red-500'}`}
+          >
+            {available ? 'Available' : 'Unavailable'}
           </Badge>
-          {preferred && (
-            <Badge 
-              className="absolute top-2 left-2 bg-primary"
-              variant="outline"
-            >
-              {preferred}
-            </Badge>
-          )}
+          <Badge className="absolute top-2 left-2 bg-secondary">{type}</Badge>
         </div>
-        <CardContent className="p-4">
-          <div className="mb-2">
-            <h3 className="font-semibold text-lg line-clamp-1">{title}</h3>
-            <div className="flex items-center text-sm text-gray-500">
-              <MapPin className="h-3.5 w-3.5 mr-1" />
-              <span className="truncate">{locality}, {city}</span>
+
+        {/* Property Details */}
+        <div className="p-4">
+          <h3 className="text-lg font-semibold mb-1 line-clamp-1">{title}</h3>
+          <div className="flex items-center text-sm text-gray-500 mb-2">
+            <MapPin className="h-4 w-4 mr-1" />
+            <span className="line-clamp-1">{locality}, {city}</span>
+          </div>
+
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center text-primary font-bold">
+              <IndianRupee className="h-4 w-4" />
+              <span>{rent.toLocaleString()}</span>
+              <span className="text-gray-500 font-normal text-sm ml-1">/month</span>
+            </div>
+            <div className="text-sm text-gray-500">
+              Deposit: ₹{deposit.toLocaleString()}
             </div>
           </div>
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-primary font-semibold">
-              ₹{formatIndianRupees(rent, false)}
-              <span className="text-xs text-gray-500 font-normal">/month</span>
-            </p>
-          </div>
-          <div className="flex justify-between text-sm text-gray-600">
+
+          <div className="grid grid-cols-3 gap-2 text-sm text-gray-600">
             <div className="flex items-center">
-              <BedDouble className="h-4 w-4 mr-1" />
+              <Bed className="h-4 w-4 mr-1" />
               <span>{bedrooms} {bedrooms === 1 ? 'Bed' : 'Beds'}</span>
             </div>
             <div className="flex items-center">
@@ -58,11 +70,15 @@ const PropertyCard = ({ property }) => {
               <span>{bathrooms} {bathrooms === 1 ? 'Bath' : 'Baths'}</span>
             </div>
             <div className="flex items-center">
-              <CustomSquareFootage className="h-4 w-4 mr-1" />
+              <SquareFootage className="h-4 w-4 mr-1" />
               <span>{area} sq.ft</span>
             </div>
           </div>
-        </CardContent>
+
+          <div className="mt-3">
+            <Badge variant="outline">{furnishing}</Badge>
+          </div>
+        </div>
       </Card>
     </Link>
   );
