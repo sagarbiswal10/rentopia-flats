@@ -8,7 +8,8 @@ import SquareFootage from '@/components/icons/SquareFootage';
 
 const PropertyCard = ({ property }) => {
   const {
-    id,
+    _id,
+    id, // Support both _id (from MongoDB) and id (from local data)
     title,
     type,
     rent,
@@ -19,19 +20,30 @@ const PropertyCard = ({ property }) => {
     furnishing,
     locality,
     city,
+    images,
     thumbnailUrl,
     available,
   } = property;
 
+  // Use _id if available, otherwise fall back to id (for compatibility with both sources)
+  const propertyId = _id || id;
+  
+  // Use thumbnailUrl if available, otherwise use the first image
+  const imageUrl = thumbnailUrl || (images && images.length > 0 ? images[0] : '/placeholder.svg');
+
   return (
-    <Link to={`/property/${id}`}>
+    <Link to={`/property/${propertyId}`}>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
         {/* Property Image */}
         <div className="relative">
           <img
-            src={thumbnailUrl || '/placeholder.svg'}
+            src={imageUrl}
             alt={title}
             className="w-full h-48 object-cover"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = '/placeholder.svg';
+            }}
           />
           <Badge
             className={`absolute top-2 right-2 ${available ? 'bg-green-500' : 'bg-red-500'}`}

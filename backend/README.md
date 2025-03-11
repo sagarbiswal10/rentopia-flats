@@ -1,50 +1,70 @@
 
-# Rental App Backend API
+# RentalApp Backend
 
-This is the backend API for the Rental App, built with Node.js, Express, and MongoDB.
+Backend for RentalApp, a property rental management application.
 
-## Setup Instructions
+## Setup
 
 1. Install dependencies:
    ```
    npm install
    ```
 
-2. Create a `.env` file in the root directory with the following variables:
+2. Set up environment variables:
+   Create a `.env` file in the backend folder with the following variables:
    ```
    PORT=5000
-   MONGO_URI=mongodb://localhost:27017/rentalapp
-   JWT_SECRET=your_jwt_secret_key
+   MONGO_URI=your_mongodb_connection_string
+   JWT_SECRET=your_secret_key
    NODE_ENV=development
    ```
 
-3. Start the server:
+3. Import sample data:
    ```
-   npm run dev
+   npm run data:import
+   ```
+   This will populate your database with sample users and properties.
+
+4. Start the server:
+   ```
+   npm run server
    ```
 
 ## API Endpoints
 
 ### Users
-- `POST /api/users/register` - Register a new user
-- `POST /api/users/login` - Authenticate user & get token
-- `GET /api/users/me` - Get user profile (Protected)
-- `PUT /api/users/update` - Update user profile (Protected)
+- `POST /api/users` - Register a new user
+- `POST /api/users/login` - Login user
+- `GET /api/users/profile` - Get user profile
+- `PUT /api/users/profile` - Update user profile
 
 ### Properties
-- `POST /api/properties` - Create a new property (Protected)
-- `GET /api/properties` - Get all available properties
+- `GET /api/properties` - Get all properties
+- `POST /api/properties` - Create a new property
 - `GET /api/properties/:id` - Get property by ID
-- `GET /api/properties/user` - Get user's properties (Protected)
-- `PUT /api/properties/:id` - Update property (Protected)
-- `DELETE /api/properties/:id` - Delete property (Protected)
+- `PUT /api/properties/:id` - Update property
+- `DELETE /api/properties/:id` - Delete property
+- `GET /api/properties/user` - Get user's properties
 
 ### Rentals
-- `POST /api/rentals` - Create a new rental (Protected)
-- `GET /api/rentals/user` - Get user's rentals (Protected)
-- `GET /api/rentals/:id` - Get rental by ID (Protected)
+- `POST /api/rentals` - Create a new rental
+- `GET /api/rentals/user` - Get user's rentals
+- `GET /api/rentals/:id` - Get rental by ID
+- `PUT /api/rentals/:id` - Update rental status
 
 ### Payments
-- `POST /api/payments` - Create a new payment (Protected)
-- `GET /api/payments/user` - Get user's payments (Protected)
-- `GET /api/payments/:id` - Get payment by ID (Protected)
+- `POST /api/payments` - Create a new payment
+- `GET /api/payments/user` - Get user's payments
+- `GET /api/payments/:id` - Get payment by ID
+
+## Database Seeding
+
+- To import sample data:
+  ```
+  npm run data:import
+  ```
+
+- To delete all data:
+  ```
+  npm run data:destroy
+  ```

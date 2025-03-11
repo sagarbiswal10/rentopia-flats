@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -7,34 +6,63 @@ import PropertyCard from '@/components/PropertyCard';
 import PropertyFilter from '@/components/PropertyFilter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { properties } from '@/data/properties';
 import { Search, MapPin, List, Grid3X3 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 const PropertiesPage = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialLocationQuery = queryParams.get('city') || '';
+  const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState(initialLocationQuery);
-  const [filteredProperties, setFilteredProperties] = useState(properties);
+  const [properties, setProperties] = useState([]);
+  const [filteredProperties, setFilteredProperties] = useState([]);
   const [activeFilters, setActiveFilters] = useState({});
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [sortOption, setSortOption] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (initialLocationQuery) {
+    const fetchProperties = async () => {
+      try {
+        const response = await fetch('/api/properties');
+        if (!response.ok) {
+          throw new Error('Failed to fetch properties');
+        }
+        const data = await response.json();
+        setProperties(data);
+        setFilteredProperties(data);
+      } catch (error) {
+        console.error('Error fetching properties:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load properties.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, [toast]);
+
+  useEffect(() => {
+    if (initialLocationQuery && properties.length > 0) {
       handleSearch();
     }
-  }, [initialLocationQuery]);
+  }, [initialLocationQuery, properties]);
 
   useEffect(() => {
-    handleSearch();
-  }, [activeFilters]);
+    if (properties.length > 0) {
+      handleSearch();
+    }
+  }, [activeFilters, sortOption]);
 
   const handleSearch = () => {
-    let filtered = properties;
+    let filtered = [...properties];
     
-    // Apply search term (location/keyword)
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(property => {
@@ -46,17 +74,14 @@ const PropertiesPage = () => {
       });
     }
     
-    // Apply property type filter
     if (activeFilters.propertyType && activeFilters.propertyType.length > 0) {
       filtered = filtered.filter(property => 
         activeFilters.propertyType.includes(property.type)
       );
     }
     
-    // Apply bedrooms filter
     if (activeFilters.bedrooms && activeFilters.bedrooms.length > 0) {
       filtered = filtered.filter(property => {
-        // Map BHK strings to numbers
         let matches = false;
         activeFilters.bedrooms.forEach(bhk => {
           if (bhk === "1 RK" && property.bedrooms === 1) matches = true;
@@ -70,7 +95,6 @@ const PropertiesPage = () => {
       });
     }
     
-    // Apply rent range filter
     if (activeFilters.minRent || activeFilters.maxRent) {
       filtered = filtered.filter(property => 
         (activeFilters.minRent ? property.rent >= activeFilters.minRent : true) && 
@@ -78,14 +102,12 @@ const PropertiesPage = () => {
       );
     }
     
-    // Apply furnishing filter
     if (activeFilters.furnishing && activeFilters.furnishing.length > 0) {
       filtered = filtered.filter(property => 
         activeFilters.furnishing.includes(property.furnishing)
       );
     }
     
-    // Apply amenities filter
     if (activeFilters.amenities && activeFilters.amenities.length > 0) {
       filtered = filtered.filter(property => {
         return activeFilters.amenities.every(amenity => 
@@ -94,7 +116,6 @@ const PropertiesPage = () => {
       });
     }
     
-    // Apply sorting
     if (sortOption) {
       switch (sortOption) {
         case 'rent-asc':
@@ -121,13 +142,43 @@ const PropertiesPage = () => {
     setActiveFilters(filters);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <main className="pt-6 pb-12">
+          <div className="container mx-auto px-4">
+            <div className="bg-white rounded-lg shadow-md p-4 mb-6 animate-pulse">
+              <div className="h-10 bg-gray-200 rounded"></div>
+            </div>
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div className="lg:w-1/4">
+                <div className="h-96 bg-gray-200 rounded-lg animate-pulse"></div>
+              </div>
+              <div className="lg:w-3/4">
+                <div className="bg-white rounded-lg shadow-sm p-4 mb-6 animate-pulse">
+                  <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className="h-72 bg-gray-200 animate-pulse rounded-lg"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       
       <main className="pt-6 pb-12">
         <div className="container mx-auto px-4">
-          {/* Search Bar */}
           <div className="bg-white rounded-lg shadow-md p-4 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-grow">
@@ -151,21 +202,17 @@ const PropertiesPage = () => {
           </div>
           
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Left Sidebar - Filters */}
             <div className="lg:w-1/4">
               <PropertyFilter onFilterChange={handleFilterChange} />
             </div>
             
-            {/* Right - Properties List */}
             <div className="lg:w-3/4">
-              {/* Results Header */}
               <div className="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-col sm:flex-row justify-between items-center">
                 <h2 className="text-lg font-semibold mb-2 sm:mb-0">
                   {filteredProperties.length} Properties Found
                 </h2>
                 
                 <div className="flex items-center gap-4">
-                  {/* View Type Toggle */}
                   <div className="flex border rounded overflow-hidden">
                     <button 
                       className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-white text-gray-600'}`}
@@ -181,13 +228,11 @@ const PropertiesPage = () => {
                     </button>
                   </div>
                   
-                  {/* Sort Dropdown */}
                   <select 
                     className="border rounded p-2"
                     value={sortOption}
                     onChange={(e) => {
                       setSortOption(e.target.value);
-                      handleSearch();
                     }}
                   >
                     <option value="">Sort By</option>
@@ -199,11 +244,16 @@ const PropertiesPage = () => {
                 </div>
               </div>
               
-              {/* Properties Grid/List */}
               {filteredProperties.length > 0 ? (
                 <div className={viewMode === 'grid' ? 'property-grid' : 'space-y-4'}>
                   {filteredProperties.map(property => (
-                    <PropertyCard key={property.id} property={property} />
+                    <PropertyCard 
+                      key={property._id} 
+                      property={{
+                        ...property,
+                        id: property._id
+                      }} 
+                    />
                   ))}
                 </div>
               ) : (
