@@ -1,4 +1,5 @@
 
+
 # RentalApp Backend
 
 Backend for RentalApp, a property rental management application.
@@ -19,34 +20,25 @@ Backend for RentalApp, a property rental management application.
    NODE_ENV=development
    ```
 
-3. Import sample data:
-   ```
-   npm run data:import
-   ```
-   This will populate your database with sample users and properties.
-
-4. Start the server:
+3. Start the server:
    ```
    npm run server
    ```
+   
+   This will automatically:
+   - Connect to your MongoDB database
+   - Seed the database with sample users and properties (if no data exists)
+   - Start the Express server
 
-## Importing Data
+## About the Data Seeding
 
-The application comes with a data seeder that will populate your database with:
+The application automatically seeds your database with:
 - 6 sample users (including one admin user)
 - 6 sample properties with different configurations
   
 All properties are initially set as available for rent. Once a user rents a property, its availability status will be updated to false.
 
-To import the sample data, run:
-```
-npm run data:import
-```
-
-To delete all data from the database:
-```
-npm run data:destroy
-```
+The seeding will only occur if your database is empty (no users or properties). If you already have data, the seeding process will be skipped.
 
 ## Workflow
 
@@ -84,3 +76,4 @@ npm run data:destroy
 - `POST /api/payments` - Create a new payment
 - `GET /api/payments/user` - Get user's payments
 - `GET /api/payments/:id` - Get payment by ID
+
