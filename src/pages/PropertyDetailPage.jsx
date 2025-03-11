@@ -1,17 +1,23 @@
 
-import React from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useUser } from '@/contexts/UserContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bed, Bath, Calendar, MapPin, Phone, IndianRupee, User } from 'lucide-react';
+import { Bed, Bath, Calendar, MapPin, Phone, IndianRupee, User, MessageCircle } from 'lucide-react';
 import SquareFootage from '@/components/icons/SquareFootage';
 import { properties } from '@/data/properties';
+import { toast } from 'sonner';
 
 const PropertyDetailPage = () => {
   const { id } = useParams();
+  const { user, addRental } = useUser();
+  const navigate = useNavigate();
+  const [isRenting, setIsRenting] = useState(false);
+  
   const property = properties.find(p => p.id === parseInt(id));
 
   if (!property) {
@@ -50,6 +56,42 @@ const PropertyDetailPage = () => {
     ownerName,
     ownerPhone,
   } = property;
+  
+  const handleRentProperty = async () => {
+    if (!user) {
+      toast.error("Please login to rent this property");
+      navigate('/login');
+      return;
+    }
+    
+    setIsRenting(true);
+    
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Create a new rental
+      const newRental = {
+        id: Date.now(),
+        property: property,
+        user: {
+          id: user.id,
+          name: user.name,
+        },
+        paymentStatus: 'pending',
+        createdAt: new Date().toISOString(),
+      };
+      
+      // Add to user's rentals
+      addRental(newRental);
+      
+      // Redirect to payment page
+      navigate(`/payment/${newRental.id}`);
+    } catch (error) {
+      toast.error("Failed to process your request. Please try again.");
+      setIsRenting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -187,19 +229,55 @@ const PropertyDetailPage = () => {
                   </Button>
                   
                   <Button variant="secondary" className="w-full">
+                    <MessageCircle className="h-4 w-4 mr-2" />
                     Message Owner
                   </Button>
                 </div>
               </Card>
               
-              {/* Book Visit Card */}
+              {/* Rent Property Card */}
               <Card>
                 <div className="p-6">
-                  <h2 className="text-lg font-semibold mb-4">Schedule a Visit</h2>
-                  <p className="text-gray-600 mb-4">
-                    Visit the property to check it out in person before making a decision.
-                  </p>
-                  <Button className="w-full">Book a Visit</Button>
+                  <h2 className="text-lg font-semibold mb-4">Rent This Property</h2>
+                  
+                  {available ? (
+                    <>
+                      <p className="text-gray-600 mb-4">
+                        Interested in renting this property? Proceed to payment to secure it now.
+                      </p>
+                      <Button 
+                        className="w-full" 
+                        disabled={isRenting}
+                        onClick={handleRentProperty}
+                      >
+                        {isRenting ? "Processing..." : "Rent Now"}
+                      </Button>
+                      <p className="text-xs text-gray-500 mt-2 text-center">
+                        You'll pay ₹{(rent + deposit).toLocaleString()} (rent + deposit)
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-red-50 p-4 rounded-md mb-4">
+                        <p className="text-red-600">
+                          This property is currently unavailable for rent.
+                        </p>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => navigate('/properties')}
+                      >
+                        Browse Other Properties
+                      </Button>
+                    </>
+                  )}
+                  
+                  <div className="mt-4">
+                    <Button variant="secondary" className="w-full">
+                      Book a Visit
+                    </Button>
+                  </div>
                 </div>
               </Card>
             </div>
