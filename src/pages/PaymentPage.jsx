@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -14,7 +15,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { CheckCircle2, IndianRupee, CreditCard, Wallet, Building, Calendar } from 'lucide-react';
-import { properties } from '@/data/properties';
 
 const paymentSchema = z.object({
   cardName: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -26,7 +26,7 @@ const paymentSchema = z.object({
 
 const PaymentPage = () => {
   const { rentalId } = useParams();
-  const { user, addRental, updateUser } = useUser();
+  const { user, token, addRental } = useUser();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [property, setProperty] = useState(null);
@@ -50,16 +50,33 @@ const PaymentPage = () => {
       return;
     }
     
-    // If we have a rentalId, find the existing rental
-    // Otherwise, get property from URL parameter or dummy data
+    const fetchProperty = async () => {
+      try {
+        // We need to fetch the property that the user wants to rent
+        const response = await fetch(`http://localhost:5000/api/properties/${rentalId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch property details');
+        }
+        
+        const propertyData = await response.json();
+        setProperty(propertyData);
+        
+        // Calculate total amount (rent + deposit)
+        setTotalAmount(propertyData.rent + propertyData.deposit);
+      } catch (error) {
+        console.error('Error fetching property:', error);
+        toast.error('Unable to load property details. Please try again.');
+        navigate('/properties');
+      }
+    };
     
-    // For this demo, we'll use a random property
-    const randomProperty = properties[Math.floor(Math.random() * properties.length)];
-    setProperty(randomProperty);
-    
-    // Calculate total amount (rent + deposit)
-    setTotalAmount(randomProperty.rent + randomProperty.deposit);
-  }, [rentalId, user, navigate]);
+    fetchProperty();
+  }, [rentalId, user, navigate, token]);
   
   const onSubmit = async (values) => {
     if (!user || !property) {
@@ -70,27 +87,54 @@ const PaymentPage = () => {
     setIsSubmitting(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Create a new rental object with payment info
-      const newRental = {
-        id: Date.now(),
-        property: property,
-        user: {
-          id: user.id,
-          name: user.name,
+      // Create a new rental payment in the backend
+      const response = await fetch('http://localhost:5000/api/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
-        paymentStatus: 'paid',
-        paymentMethod: values.paymentMethod,
-        paymentDate: new Date().toISOString(),
-        amount: totalAmount,
-        rentStartDate: new Date().toISOString(),
-        rentEndDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
-      };
+        body: JSON.stringify({
+          propertyId: property._id,
+          amount: totalAmount,
+          paymentMethod: values.paymentMethod,
+          cardDetails: values.paymentMethod === 'card' ? {
+            name: values.cardName,
+            number: values.cardNumber,
+            expiry: values.expiryDate,
+            cvv: values.cvv,
+          } : null,
+        }),
+      });
       
-      // Add rental to user's rentals
-      addRental(newRental);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Payment failed');
+      }
+      
+      const paymentData = await response.json();
+      
+      // Create a rental record after successful payment
+      const rentalResponse = await fetch('http://localhost:5000/api/rentals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          propertyId: property._id,
+          paymentId: paymentData._id,
+          startDate: new Date().toISOString(),
+          endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+        }),
+      });
+      
+      if (!rentalResponse.ok) {
+        const errorData = await rentalResponse.json();
+        throw new Error(errorData.message || 'Failed to create rental record');
+      }
+      
+      const newRental = await rentalResponse.json();
       
       toast.success("Payment successful! Property rented successfully.");
       
@@ -104,7 +148,7 @@ const PaymentPage = () => {
         });
       }, 1000);
     } catch (error) {
-      toast.error("Payment failed. Please try again.");
+      toast.error(error.message || "Payment failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -184,6 +228,7 @@ const PaymentPage = () => {
                         />
                       </div>
                       
+                      {/* Card details form - only shown if card payment method is selected */}
                       {form.watch('paymentMethod') === 'card' && (
                         <div className="space-y-4">
                           <h2 className="text-xl font-semibold">Card Details</h2>

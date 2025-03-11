@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, Lock, User, UserPlus, LogIn } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useUser } from '@/contexts/UserContext';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 // Validation schemas
 const loginSchema = z.object({
@@ -33,6 +35,16 @@ const registerSchema = z.object({
 const LoginPage = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const { login, user } = useUser();
+  const [activeTab, setActiveTab] = useState("login");
+  const [showRegisterDialog, setShowRegisterDialog] = useState(false);
+  
+  useEffect(() => {
+    // If user is already logged in, redirect to dashboard
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
   
   // Login form
   const loginForm = useForm({
@@ -58,26 +70,35 @@ const LoginPage = () => {
     setIsLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // API call to backend for login
+      const response = await fetch('http://localhost:5000/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: values.email,
+          password: values.password,
+        }),
+      });
       
-      // In a real app, you would validate credentials with backend
+      const data = await response.json();
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          // User not found, show register dialog
+          setShowRegisterDialog(true);
+          return;
+        }
+        throw new Error(data.message || 'Login failed');
+      }
+      
+      // Login successful
+      login(data.user, data.token);
       toast.success("Login successful!");
-      
-      // Store user info
-      const user = {
-        id: "user-" + Date.now(),
-        name: "Test User",
-        email: values.email,
-        isLoggedIn: true
-      };
-      
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      
-      // Redirect to home
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
-      toast.error("Login failed. Please try again.");
+      toast.error(error.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -87,28 +108,31 @@ const LoginPage = () => {
     setIsLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // API call to backend for registration
+      const response = await fetch('http://localhost:5000/api/users/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: values.name,
+          email: values.email,
+          password: values.password,
+        }),
+      });
       
-      // In a real app, you would create a user in the backend
-      toast.success("Registration successful! You can now login.");
+      const data = await response.json();
       
-      // Store new user
-      const newUser = {
-        id: "user-" + Date.now(),
-        name: values.name,
-        email: values.email,
-        isLoggedIn: true,
-        properties: [],
-        rentals: []
-      };
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
       
-      localStorage.setItem('currentUser', JSON.stringify(newUser));
-      
-      // Redirect to home
-      navigate('/');
+      // Registration successful
+      login(data.user, data.token);
+      toast.success("Registration successful!");
+      navigate('/dashboard');
     } catch (error) {
-      toast.error("Registration failed. Please try again.");
+      toast.error(error.message || "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -120,7 +144,12 @@ const LoginPage = () => {
       
       <main className="flex-grow flex items-center justify-center py-12 px-4">
         <Card className="w-full max-w-md">
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs 
+            defaultValue="login" 
+            value={activeTab} 
+            onValueChange={setActiveTab} 
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
@@ -173,6 +202,17 @@ const LoginPage = () => {
                       </>
                     )}
                   </Button>
+                  
+                  <p className="text-center text-sm mt-4">
+                    Don't have an account?{" "}
+                    <Button 
+                      variant="link" 
+                      className="p-0" 
+                      onClick={() => setActiveTab("register")}
+                    >
+                      Register now
+                    </Button>
+                  </p>
                 </form>
               </Form>
             </TabsContent>
@@ -258,12 +298,46 @@ const LoginPage = () => {
                       </>
                     )}
                   </Button>
+                  
+                  <p className="text-center text-sm mt-4">
+                    Already have an account?{" "}
+                    <Button 
+                      variant="link" 
+                      className="p-0" 
+                      onClick={() => setActiveTab("login")}
+                    >
+                      Login
+                    </Button>
+                  </p>
                 </form>
               </Form>
             </TabsContent>
           </Tabs>
         </Card>
       </main>
+      
+      <Dialog open={showRegisterDialog} onOpenChange={setShowRegisterDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Account Not Found</DialogTitle>
+            <DialogDescription>
+              We couldn't find an account with that email. Would you like to create a new account?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button variant="outline" onClick={() => setShowRegisterDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              setShowRegisterDialog(false);
+              setActiveTab("register");
+              registerForm.setValue("email", loginForm.getValues("email"));
+            }}>
+              Register Now
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <Footer />
     </div>
