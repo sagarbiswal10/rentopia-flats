@@ -65,7 +65,7 @@ const Navbar = () => {
                   <DropdownMenuTrigger asChild>
                     <Button className="bg-primary hover:bg-primary/90">
                       <User className="h-5 w-5 mr-1" />
-                      {user.name.split(' ')[0]}
+                      {user.name ? user.name.split(' ')[0] : "User"}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -87,15 +87,15 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <Link to="/post-property">
+                <Link to="/login">
                   <Button variant="outline" className="border-primary text-primary hover:bg-primary/10">
-                    List Property
+                    Login
                   </Button>
                 </Link>
-                <Link to="/login">
+                <Link to="/register">
                   <Button className="bg-primary hover:bg-primary/90">
                     <User className="h-5 w-5 mr-1" />
-                    Login
+                    Register
                   </Button>
                 </Link>
               </>
@@ -144,27 +144,36 @@ const Navbar = () => {
                 Contact
               </Link>
               <div className="flex space-x-3 pt-2">
-                <Link to="/post-property" className="flex-1" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10">
-                    List Property
-                  </Button>
-                </Link>
                 {user ? (
-                  <Button 
-                    className="flex-1 w-full bg-primary hover:bg-primary/90"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      navigate('/dashboard');
-                    }}
-                  >
-                    Dashboard
-                  </Button>
-                ) : (
-                  <Link to="/login" className="flex-1" onClick={() => setIsMenuOpen(false)}>
-                    <Button className="w-full bg-primary hover:bg-primary/90">
-                      Login
+                  <>
+                    <Link to="/post-property" className="flex-1" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10">
+                        List Property
+                      </Button>
+                    </Link>
+                    <Button 
+                      className="flex-1 w-full bg-primary hover:bg-primary/90"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        navigate('/dashboard');
+                      }}
+                    >
+                      Dashboard
                     </Button>
-                  </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" className="flex-1" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary/10">
+                        Login
+                      </Button>
+                    </Link>
+                    <Link to="/register" className="flex-1" onClick={() => setIsMenuOpen(false)}>
+                      <Button className="w-full bg-primary hover:bg-primary/90">
+                        Register
+                      </Button>
+                    </Link>
+                  </>
                 )}
               </div>
               {user && (

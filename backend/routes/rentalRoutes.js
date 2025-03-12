@@ -5,19 +5,15 @@ const {
   createRental,
   getUserRentals,
   getRentalById,
-  getAllRentals,
   updateRentalStatus,
+  getAllRentals,
 } = require('../controllers/rentalController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
-router.route('/')
-  .post(protect, createRental)
-  .get(protect, admin, getAllRentals);
-  
-router.route('/user').get(protect, getUserRentals);
-
-router.route('/:id')
-  .get(protect, getRentalById)
-  .put(protect, updateRentalStatus);
+router.post('/', protect, createRental);
+router.get('/user', protect, getUserRentals);
+router.get('/:id', protect, getRentalById);
+router.put('/:id', protect, updateRentalStatus);
+router.get('/', protect, admin, getAllRentals);
 
 module.exports = router;

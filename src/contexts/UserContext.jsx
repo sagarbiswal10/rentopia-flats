@@ -7,6 +7,8 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
+  const [userProperties, setUserProperties] = useState([]);
+  const [userRentals, setUserRentals] = useState([]);
 
   useEffect(() => {
     // Check if user is logged in by validating the token
@@ -27,6 +29,10 @@ export const UserProvider = ({ children }) => {
             const userData = await response.json();
             setUser(userData);
             setToken(storedToken);
+            
+            // Fetch user properties and rentals
+            getUserProperties(storedToken);
+            getUserRentals(storedToken);
           } else {
             // Token is invalid, remove from storage
             localStorage.removeItem('token');
@@ -47,6 +53,10 @@ export const UserProvider = ({ children }) => {
     setUser(userData);
     setToken(authToken);
     localStorage.setItem('token', authToken);
+    
+    // After login, fetch user properties and rentals
+    getUserProperties(authToken);
+    getUserRentals(authToken);
   };
 
   const logout = async () => {
@@ -66,6 +76,8 @@ export const UserProvider = ({ children }) => {
       // Regardless of API response, clear local state
       setUser(null);
       setToken(null);
+      setUserProperties([]);
+      setUserRentals([]);
       localStorage.removeItem('token');
     }
   };
@@ -86,7 +98,10 @@ export const UserProvider = ({ children }) => {
       }
       
       const updatedUserData = await response.json();
-      setUser(updatedUserData);
+      setUser(prevUser => ({
+        ...prevUser,
+        ...updatedUserData
+      }));
       return updatedUserData;
     } catch (error) {
       console.error('Update user error:', error);
@@ -114,11 +129,8 @@ export const UserProvider = ({ children }) => {
       
       const newProperty = await response.json();
       
-      // Update local user state with the new property
-      setUser(prevUser => ({
-        ...prevUser,
-        properties: [...(prevUser.properties || []), newProperty],
-      }));
+      // Update local properties state
+      setUserProperties(prev => [...prev, newProperty]);
       
       return newProperty;
     } catch (error) {
@@ -147,11 +159,8 @@ export const UserProvider = ({ children }) => {
       
       const newRental = await response.json();
       
-      // Update local user state with the new rental
-      setUser(prevUser => ({
-        ...prevUser,
-        rentals: [...(prevUser.rentals || []), newRental],
-      }));
+      // Update local rentals state
+      setUserRentals(prev => [...prev, newRental]);
       
       return newRental;
     } catch (error) {
@@ -161,14 +170,14 @@ export const UserProvider = ({ children }) => {
   };
   
   // Get user's properties
-  const getUserProperties = async () => {
-    if (!user || !token) return [];
+  const getUserProperties = async (currentToken = token) => {
+    if (!currentToken) return [];
     
     try {
       const response = await fetch('http://localhost:5000/api/properties/user', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${currentToken}`,
         },
       });
       
@@ -178,11 +187,8 @@ export const UserProvider = ({ children }) => {
       
       const properties = await response.json();
       
-      // Update user's properties in state
-      setUser(prevUser => ({
-        ...prevUser,
-        properties,
-      }));
+      // Update local properties state
+      setUserProperties(properties);
       
       return properties;
     } catch (error) {
@@ -192,14 +198,14 @@ export const UserProvider = ({ children }) => {
   };
   
   // Get user's rentals
-  const getUserRentals = async () => {
-    if (!user || !token) return [];
+  const getUserRentals = async (currentToken = token) => {
+    if (!currentToken) return [];
     
     try {
       const response = await fetch('http://localhost:5000/api/rentals/user', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${currentToken}`,
         },
       });
       
@@ -209,11 +215,8 @@ export const UserProvider = ({ children }) => {
       
       const rentals = await response.json();
       
-      // Update user's rentals in state
-      setUser(prevUser => ({
-        ...prevUser,
-        rentals,
-      }));
+      // Update local rentals state
+      setUserRentals(rentals);
       
       return rentals;
     } catch (error) {
@@ -227,6 +230,8 @@ export const UserProvider = ({ children }) => {
       user, 
       loading, 
       token,
+      userProperties,
+      userRentals,
       login, 
       logout, 
       updateUser,

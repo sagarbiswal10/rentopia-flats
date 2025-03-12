@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import Navbar from '@/components/Navbar';
@@ -12,21 +12,35 @@ import { Home, Building, IndianRupee, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 const UserDashboardPage = () => {
-  const { user, logout } = useUser();
+  const { user, loading, token, userProperties, userRentals, getUserProperties, getUserRentals, logout } = useUser();
   const navigate = useNavigate();
   
-  React.useEffect(() => {
-    if (!user) {
+  useEffect(() => {
+    if (!loading && !token) {
       toast.error("You must be logged in to view your dashboard");
       navigate('/login');
+    } else if (token) {
+      // Refresh user properties and rentals when dashboard loads
+      getUserProperties();
+      getUserRentals();
     }
-  }, [user, navigate]);
+  }, [loading, token, navigate, getUserProperties, getUserRentals]);
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Navbar />
+        <main className="flex-grow flex items-center justify-center">
+          <p>Loading...</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
   
   if (!user) {
     return null;
   }
-  
-  const { properties = [], rentals = [] } = user;
   
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -42,7 +56,7 @@ const UserDashboardPage = () => {
                   <div className="flex flex-col items-center mb-6">
                     <div className="h-24 w-24 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                       <span className="text-2xl font-bold text-primary">
-                        {user.name.charAt(0)}
+                        {user.name ? user.name.charAt(0).toUpperCase() : "U"}
                       </span>
                     </div>
                     <h2 className="text-xl font-bold">{user.name}</h2>
@@ -104,7 +118,7 @@ const UserDashboardPage = () => {
                   <TabsContent value="properties" className="p-6">
                     <h3 className="text-lg font-semibold mb-4">Properties You've Listed</h3>
                     
-                    {properties.length === 0 ? (
+                    {userProperties.length === 0 ? (
                       <div className="text-center py-8">
                         <Building className="h-12 w-12 mx-auto text-gray-400 mb-3" />
                         <h4 className="text-lg font-medium mb-2">No Properties Listed Yet</h4>
@@ -117,8 +131,8 @@ const UserDashboardPage = () => {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {properties.map((property) => (
-                          <Card key={property.id} className="overflow-hidden">
+                        {userProperties.map((property) => (
+                          <Card key={property._id} className="overflow-hidden">
                             <div className="grid grid-cols-1 md:grid-cols-4">
                               <div className="md:col-span-1">
                                 <img 
@@ -147,20 +161,14 @@ const UserDashboardPage = () => {
                                   <Button 
                                     variant="outline" 
                                     size="sm"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      navigate(`/property/${property.id}`);
-                                    }}
+                                    onClick={() => navigate(`/property/${property._id}`)}
                                   >
                                     View Details
                                   </Button>
                                   <Button 
                                     variant="outline" 
                                     size="sm"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      navigate(`/edit-property/${property.id}`);
-                                    }}
+                                    onClick={() => navigate(`/edit-property/${property._id}`)}
                                   >
                                     Edit
                                   </Button>
@@ -176,7 +184,7 @@ const UserDashboardPage = () => {
                   <TabsContent value="rentals" className="p-6">
                     <h3 className="text-lg font-semibold mb-4">Properties You've Rented</h3>
                     
-                    {rentals.length === 0 ? (
+                    {userRentals.length === 0 ? (
                       <div className="text-center py-8">
                         <Home className="h-12 w-12 mx-auto text-gray-400 mb-3" />
                         <h4 className="text-lg font-medium mb-2">No Rentals Yet</h4>
@@ -189,21 +197,21 @@ const UserDashboardPage = () => {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {rentals.map((rental) => (
-                          <Card key={rental.property.id} className="overflow-hidden">
+                        {userRentals.map((rental) => (
+                          <Card key={rental._id} className="overflow-hidden">
                             <div className="grid grid-cols-1 md:grid-cols-4">
                               <div className="md:col-span-1">
                                 <img 
-                                  src={rental.property.thumbnailUrl || '/placeholder.svg'} 
-                                  alt={rental.property.title}
+                                  src={rental.property?.thumbnailUrl || '/placeholder.svg'} 
+                                  alt={rental.property?.title || "Property"}
                                   className="w-full h-full object-cover md:h-40"
                                 />
                               </div>
                               <div className="p-4 md:col-span-3">
-                                <h4 className="font-semibold mb-2">{rental.property.title}</h4>
+                                <h4 className="font-semibold mb-2">{rental.property?.title || "Property"}</h4>
                                 <div className="flex items-center text-sm text-gray-500 mb-2">
                                   <MapPin className="h-4 w-4 mr-1" />
-                                  {rental.property.locality}, {rental.property.city}
+                                  {rental.property?.locality || "N/A"}, {rental.property?.city || "N/A"}
                                 </div>
                                 <div className="text-sm mb-3">
                                   <span className="font-medium">Payment Status: </span>
@@ -215,20 +223,14 @@ const UserDashboardPage = () => {
                                   <Button 
                                     variant="outline" 
                                     size="sm"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      navigate(`/property/${rental.property.id}`);
-                                    }}
+                                    onClick={() => navigate(`/property/${rental.property?._id}`)}
                                   >
                                     View Details
                                   </Button>
                                   {rental.paymentStatus !== 'paid' && (
                                     <Button 
                                       size="sm"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        navigate(`/payment/${rental.id}`);
-                                      }}
+                                      onClick={() => navigate(`/payment/${rental._id}`)}
                                     >
                                       Pay Rent
                                     </Button>

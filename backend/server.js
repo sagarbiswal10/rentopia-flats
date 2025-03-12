@@ -1,4 +1,3 @@
-
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -9,7 +8,7 @@ const rentalRoutes = require('./routes/rentalRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const { errorHandler } = require('./middleware/errorMiddleware');
 
-// Import seeder functions
+// Import models
 const Property = require('./models/propertyModel');
 const User = require('./models/userModel');
 const Rental = require('./models/rentalModel');
@@ -39,38 +38,32 @@ const users = [
     name: 'Rajesh Kumar',
     email: 'rajesh@example.com',
     password: 'password123',
-    phone: '9876543210',
     isAdmin: true
   },
   {
     name: 'Priya Singh',
     email: 'priya@example.com',
     password: 'password123',
-    phone: '8765432109',
   },
   {
     name: 'Vijay Sharma',
     email: 'vijay@example.com',
     password: 'password123',
-    phone: '7654321098',
   },
   {
     name: 'Anil Reddy',
     email: 'anil@example.com',
     password: 'password123',
-    phone: '6543210987',
   },
   {
     name: 'Meera Patel',
     email: 'meera@example.com',
     password: 'password123',
-    phone: '5432109876',
   },
   {
     name: 'Suresh Nair',
     email: 'suresh@example.com',
     password: 'password123',
-    phone: '4321098765',
   }
 ];
 
