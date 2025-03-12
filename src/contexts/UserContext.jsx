@@ -124,7 +124,8 @@ export const UserProvider = ({ children }) => {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to add property');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add property');
       }
       
       const newProperty = await response.json();
@@ -154,7 +155,8 @@ export const UserProvider = ({ children }) => {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to add rental');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add rental');
       }
       
       const newRental = await response.json();
@@ -225,6 +227,40 @@ export const UserProvider = ({ children }) => {
     }
   };
 
+  // Update payment status for rental
+  const updateRentalPaymentStatus = async (rentalId, paymentStatus, paymentId) => {
+    if (!token) return null;
+    
+    try {
+      const response = await fetch(`http://localhost:5000/api/rentals/${rentalId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ paymentStatus, paymentId }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update rental payment status');
+      }
+      
+      const updatedRental = await response.json();
+      
+      // Update local rentals state
+      setUserRentals(prev => 
+        prev.map(rental => 
+          rental._id === rentalId ? updatedRental : rental
+        )
+      );
+      
+      return updatedRental;
+    } catch (error) {
+      console.error('Update rental status error:', error);
+      throw error;
+    }
+  };
+
   return (
     <UserContext.Provider value={{ 
       user, 
@@ -238,7 +274,8 @@ export const UserProvider = ({ children }) => {
       addProperty,
       addRental,
       getUserProperties,
-      getUserRentals
+      getUserRentals,
+      updateRentalPaymentStatus
     }}>
       {children}
     </UserContext.Provider>

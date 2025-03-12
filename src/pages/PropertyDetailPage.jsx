@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import Navbar from '@/components/Navbar';
@@ -9,18 +9,51 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Bed, Bath, Calendar, MapPin, Phone, IndianRupee, User, MessageCircle } from 'lucide-react';
 import SquareFootage from '@/components/icons/SquareFootage';
-import { properties } from '@/data/properties';
 import { toast } from 'sonner';
 
 const PropertyDetailPage = () => {
   const { id } = useParams();
-  const { user, addRental } = useUser();
+  const { user, token, addRental } = useUser();
   const navigate = useNavigate();
   const [isRenting, setIsRenting] = useState(false);
+  const [property, setProperty] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  const property = properties.find(p => p.id === parseInt(id));
+  useEffect(() => {
+    const fetchProperty = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/properties/${id}`);
+        if (!response.ok) {
+          throw new Error('Property not found');
+        }
+        
+        const data = await response.json();
+        setProperty(data);
+      } catch (err) {
+        setError(err.message);
+        toast.error('Failed to load property details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProperty();
+  }, [id]);
 
-  if (!property) {
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-grow flex items-center justify-center">
+          <p>Loading property details...</p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !property) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -52,10 +85,11 @@ const PropertyDetailPage = () => {
     description,
     amenities,
     available,
-    availableFrom,
-    ownerName,
-    ownerPhone,
+    user: propertyOwner,
   } = property;
+  
+  // Check if the current user is the owner of this property
+  const isOwner = user && propertyOwner && user._id === propertyOwner._id;
   
   const handleRentProperty = async () => {
     if (!user) {
@@ -64,35 +98,42 @@ const PropertyDetailPage = () => {
       return;
     }
     
+    if (isOwner) {
+      toast.error("You cannot rent your own property");
+      return;
+    }
+    
     setIsRenting(true);
     
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Create a new rental
-      const newRental = {
-        id: Date.now(),
-        property: property,
-        user: {
-          id: user.id,
-          name: user.name,
-        },
-        paymentStatus: 'pending',
-        createdAt: new Date().toISOString(),
+      // Create rental data
+      const rentalData = {
+        propertyId: property._id,
+        startDate: new Date().toISOString(),
+        endDate: new Date(new Date().setMonth(new Date().getMonth() + 11)).toISOString(),
+        totalAmount: property.rent + property.deposit,
       };
       
-      // Add to user's rentals
-      addRental(newRental);
+      // Create a new rental
+      const newRental = await addRental(rentalData);
       
-      // Redirect to payment page
-      navigate(`/payment/${newRental.id}`);
+      if (newRental && newRental._id) {
+        // Redirect to payment page
+        navigate(`/payment/${newRental._id}`);
+      } else {
+        throw new Error("Failed to create rental");
+      }
     } catch (error) {
-      toast.error("Failed to process your request. Please try again.");
+      toast.error(error.message || "Failed to process your request. Please try again.");
       setIsRenting(false);
     }
   };
 
+  // Format dates and prepare data for display
+  const ownerName = propertyOwner?.name || "Property Owner";
+  const ownerPhone = propertyOwner?.phone || "+91 9876543210"; // Default phone if not available
+  const availableFrom = property.availableFrom ? new Date(property.availableFrom) : new Date();
+  
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -106,9 +147,13 @@ const PropertyDetailPage = () => {
               <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
                 <div className="relative aspect-video">
                   <img 
-                    src={images?.[0] || '/placeholder.svg'} 
+                    src={property.thumbnailUrl || (images && images.length > 0 ? images[0] : '/placeholder.svg')} 
                     alt={title}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/placeholder.svg';
+                    }}
                   />
                   <Badge 
                     className={`absolute top-4 left-4 ${
@@ -122,12 +167,16 @@ const PropertyDetailPage = () => {
                 {/* Thumbnail Gallery */}
                 {images && images.length > 1 && (
                   <div className="grid grid-cols-4 gap-2 p-2">
-                    {images.slice(1, 5).map((img, index) => (
+                    {images.slice(0, 4).map((img, index) => (
                       <div key={index} className="aspect-video cursor-pointer">
                         <img 
                           src={img} 
-                          alt={`Property ${index + 2}`}
+                          alt={`Property ${index + 1}`}
                           className="w-full h-full object-cover rounded"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = '/placeholder.svg';
+                          }}
                         />
                       </div>
                     ))}
@@ -178,7 +227,7 @@ const PropertyDetailPage = () => {
                     </div>
                     <div className="flex flex-col items-center justify-center p-3">
                       <Calendar className="h-6 w-6 text-gray-600 mb-1" />
-                      <span className="font-semibold">{new Date(availableFrom).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                      <span className="font-semibold">{availableFrom.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
                       <span className="text-xs text-gray-500">Available From</span>
                     </div>
                   </div>
@@ -192,17 +241,19 @@ const PropertyDetailPage = () => {
                   </div>
                   
                   {/* Amenities */}
-                  <div className="mb-6">
-                    <h2 className="text-lg font-semibold mb-3">Amenities</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {amenities.map((amenity, index) => (
-                        <div key={index} className="flex items-center p-2 bg-gray-50 rounded">
-                          <div className="h-2 w-2 bg-primary rounded-full mr-2"></div>
-                          <span className="text-sm">{amenity}</span>
-                        </div>
-                      ))}
+                  {amenities && amenities.length > 0 && (
+                    <div className="mb-6">
+                      <h2 className="text-lg font-semibold mb-3">Amenities</h2>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {amenities.map((amenity, index) => (
+                          <div key={index} className="flex items-center p-2 bg-gray-50 rounded">
+                            <div className="h-2 w-2 bg-primary rounded-full mr-2"></div>
+                            <span className="text-sm">{amenity}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </Card>
             </div>
@@ -241,21 +292,29 @@ const PropertyDetailPage = () => {
                   <h2 className="text-lg font-semibold mb-4">Rent This Property</h2>
                   
                   {available ? (
-                    <>
-                      <p className="text-gray-600 mb-4">
-                        Interested in renting this property? Proceed to payment to secure it now.
-                      </p>
-                      <Button 
-                        className="w-full" 
-                        disabled={isRenting}
-                        onClick={handleRentProperty}
-                      >
-                        {isRenting ? "Processing..." : "Rent Now"}
-                      </Button>
-                      <p className="text-xs text-gray-500 mt-2 text-center">
-                        You'll pay ₹{(rent + deposit).toLocaleString()} (rent + deposit)
-                      </p>
-                    </>
+                    isOwner ? (
+                      <div className="bg-blue-50 p-4 rounded-md mb-4">
+                        <p className="text-blue-600">
+                          This is your property. You cannot rent your own property.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-gray-600 mb-4">
+                          Interested in renting this property? Proceed to payment to secure it now.
+                        </p>
+                        <Button 
+                          className="w-full" 
+                          disabled={isRenting}
+                          onClick={handleRentProperty}
+                        >
+                          {isRenting ? "Processing..." : "Rent Now"}
+                        </Button>
+                        <p className="text-xs text-gray-500 mt-2 text-center">
+                          You'll pay ₹{(rent + deposit).toLocaleString()} (rent + deposit)
+                        </p>
+                      </>
+                    )
                   ) : (
                     <>
                       <div className="bg-red-50 p-4 rounded-md mb-4">

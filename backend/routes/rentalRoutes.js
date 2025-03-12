@@ -7,11 +7,13 @@ const {
   getRentalById,
   updateRentalStatus,
   getAllRentals,
+  getPropertyOwnersRentals,
 } = require('../controllers/rentalController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
 router.post('/', protect, createRental);
 router.get('/user', protect, getUserRentals);
+router.get('/property-owners', protect, getPropertyOwnersRentals);
 router.get('/:id', protect, getRentalById);
 router.put('/:id', protect, updateRentalStatus);
 router.get('/', protect, admin, getAllRentals);

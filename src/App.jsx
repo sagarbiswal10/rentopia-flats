@@ -14,6 +14,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ListPropertyPage from "./pages/ListPropertyPage";
 import UserDashboardPage from "./pages/UserDashboardPage";
+import LandlordDashboardPage from "./pages/LandlordDashboardPage";
 import PaymentPage from "./pages/PaymentPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -37,6 +38,7 @@ const App = () => {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/post-property" element={<ListPropertyPage />} />
               <Route path="/dashboard" element={<UserDashboardPage />} />
+              <Route path="/landlord" element={<LandlordDashboardPage />} />
               <Route path="/payment/:rentalId" element={<PaymentPage />} />
               <Route path="/payment-success" element={<PaymentSuccessPage />} />
               <Route path="*" element={<NotFoundPage />} />

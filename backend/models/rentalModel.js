@@ -13,9 +13,13 @@ const rentalSchema = mongoose.Schema(
       required: true,
       ref: 'User',
     },
-    payment: {
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'paid', 'failed'],
+      default: 'pending',
+    },
+    paymentId: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
       ref: 'Payment',
     },
     startDate: {
@@ -30,6 +34,10 @@ const rentalSchema = mongoose.Schema(
       type: String,
       enum: ['active', 'expired', 'terminated'],
       default: 'active',
+    },
+    totalAmount: {
+      type: Number,
+      required: true,
     },
   },
   {

@@ -73,6 +73,17 @@ const UserDashboardPage = () => {
                       Dashboard
                     </Button>
                     
+                    {userProperties.length > 0 && (
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start"
+                        onClick={() => navigate('/landlord')}
+                      >
+                        <Building className="mr-2 h-4 w-4" />
+                        Landlord Dashboard
+                      </Button>
+                    )}
+                    
                     <Button 
                       variant="outline" 
                       className="w-full justify-start"
@@ -101,85 +112,15 @@ const UserDashboardPage = () => {
             {/* Main Content */}
             <div className="lg:col-span-3">
               <Card>
-                <Tabs defaultValue="properties">
+                <Tabs defaultValue="rentals">
                   <div className="border-b px-6 py-3">
-                    <TabsList className="grid w-full md:w-auto grid-cols-2">
-                      <TabsTrigger value="properties">
-                        <Building className="h-4 w-4 mr-2" />
-                        My Properties
-                      </TabsTrigger>
+                    <TabsList className="grid w-full md:w-auto grid-cols-1">
                       <TabsTrigger value="rentals">
                         <Home className="h-4 w-4 mr-2" />
                         My Rentals
                       </TabsTrigger>
                     </TabsList>
                   </div>
-                  
-                  <TabsContent value="properties" className="p-6">
-                    <h3 className="text-lg font-semibold mb-4">Properties You've Listed</h3>
-                    
-                    {userProperties.length === 0 ? (
-                      <div className="text-center py-8">
-                        <Building className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                        <h4 className="text-lg font-medium mb-2">No Properties Listed Yet</h4>
-                        <p className="text-gray-500 mb-4">
-                          You haven't listed any properties for rent.
-                        </p>
-                        <Button onClick={() => navigate('/post-property')}>
-                          List a Property
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {userProperties.map((property) => (
-                          <Card key={property._id} className="overflow-hidden">
-                            <div className="grid grid-cols-1 md:grid-cols-4">
-                              <div className="md:col-span-1">
-                                <img 
-                                  src={property.thumbnailUrl || '/placeholder.svg'} 
-                                  alt={property.title}
-                                  className="w-full h-full object-cover md:h-40"
-                                />
-                              </div>
-                              <div className="p-4 md:col-span-3">
-                                <div className="flex justify-between mb-2">
-                                  <h4 className="font-semibold">{property.title}</h4>
-                                  <Badge className={property.available ? 'bg-green-500' : 'bg-red-500'}>
-                                    {property.available ? 'Available' : 'Unavailable'}
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center text-sm text-gray-500 mb-2">
-                                  <MapPin className="h-4 w-4 mr-1" />
-                                  {property.locality}, {property.city}
-                                </div>
-                                <div className="flex items-center font-medium mb-3">
-                                  <IndianRupee className="h-4 w-4" />
-                                  <span>{property.rent.toLocaleString()}</span>
-                                  <span className="text-gray-500 font-normal text-sm ml-1">/month</span>
-                                </div>
-                                <div className="flex space-x-2">
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => navigate(`/property/${property._id}`)}
-                                  >
-                                    View Details
-                                  </Button>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => navigate(`/edit-property/${property._id}`)}
-                                  >
-                                    Edit
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </TabsContent>
                   
                   <TabsContent value="rentals" className="p-6">
                     <h3 className="text-lg font-semibold mb-4">Properties You've Rented</h3>
@@ -212,6 +153,12 @@ const UserDashboardPage = () => {
                                 <div className="flex items-center text-sm text-gray-500 mb-2">
                                   <MapPin className="h-4 w-4 mr-1" />
                                   {rental.property?.locality || "N/A"}, {rental.property?.city || "N/A"}
+                                </div>
+                                <div className="text-sm mb-1">
+                                  <span>From: {new Date(rental.startDate).toLocaleDateString()}</span>
+                                </div>
+                                <div className="text-sm mb-3">
+                                  <span>To: {new Date(rental.endDate).toLocaleDateString()}</span>
                                 </div>
                                 <div className="text-sm mb-3">
                                   <span className="font-medium">Payment Status: </span>
