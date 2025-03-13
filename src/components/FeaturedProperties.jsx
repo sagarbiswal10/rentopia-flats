@@ -13,80 +13,112 @@ const FeaturedProperties = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchProperties = async () => {
-      try {
-        // Create dummy properties in case API fails
-        const dummyProperties = Array(6).fill().map((_, index) => ({
-          id: `dummy-${index}`,
-          title: `${index + 1} BHK Apartment in City`,
-          type: 'apartment',
-          rent: 20000 + (index * 5000),
-          deposit: 50000 + (index * 10000),
-          bedrooms: index + 1,
-          bathrooms: index + 1,
-          area: 500 + (index * 100),
-          furnishing: ['unfurnished', 'semi-furnished', 'fully-furnished'][index % 3],
-          locality: 'Central Area',
-          city: 'Mumbai',
-          images: ['/placeholder.svg'],
-          thumbnailUrl: '/placeholder.svg',
+    // Simulate loading for a better UX
+    setTimeout(() => {
+      // Hardcoded properties data - no API call required
+      const hardcodedProperties = [
+        {
+          id: "prop-1",
+          title: "2 BHK Furnished Apartment",
+          type: "apartment",
+          rent: 25000,
+          deposit: 50000,
+          bedrooms: 2,
+          bathrooms: 2,
+          area: 850,
+          furnishing: "fully-furnished",
+          locality: "Indiranagar",
+          city: "Bangalore",
+          thumbnailUrl: "/placeholder.svg",
+          images: ["/placeholder.svg"],
           available: true,
-        }));
-        
-        console.log('Attempting to fetch properties from API...');
-        
-        // First try with VITE_API_URL environment variable if present
-        const apiBaseUrl = import.meta.env.VITE_API_URL;
-        let response;
-        
-        if (apiBaseUrl) {
-          // External API with full URL
-          response = await fetch(`${apiBaseUrl}/api/properties?t=${Date.now()}`);
-        } else {
-          // Try relative URL for development
-          response = await fetch(`/api/properties?t=${Date.now()}`);
+        },
+        {
+          id: "prop-2",
+          title: "3 BHK Luxury Villa",
+          type: "villa",
+          rent: 45000,
+          deposit: 90000,
+          bedrooms: 3,
+          bathrooms: 3,
+          area: 1500,
+          furnishing: "fully-furnished",
+          locality: "Koramangala",
+          city: "Bangalore",
+          thumbnailUrl: "/placeholder.svg",
+          images: ["/placeholder.svg"],
+          available: true,
+        },
+        {
+          id: "prop-3",
+          title: "1 BHK Studio Apartment",
+          type: "apartment",
+          rent: 15000,
+          deposit: 30000,
+          bedrooms: 1,
+          bathrooms: 1,
+          area: 500,
+          furnishing: "semi-furnished",
+          locality: "HSR Layout",
+          city: "Bangalore",
+          thumbnailUrl: "/placeholder.svg",
+          images: ["/placeholder.svg"],
+          available: true,
+        },
+        {
+          id: "prop-4",
+          title: "4 BHK Penthouse",
+          type: "penthouse",
+          rent: 75000,
+          deposit: 150000,
+          bedrooms: 4,
+          bathrooms: 4,
+          area: 2200,
+          furnishing: "fully-furnished",
+          locality: "Whitefield",
+          city: "Bangalore",
+          thumbnailUrl: "/placeholder.svg",
+          images: ["/placeholder.svg"],
+          available: true,
+        },
+        {
+          id: "prop-5",
+          title: "2 BHK Apartment with Sea View",
+          type: "apartment",
+          rent: 35000,
+          deposit: 70000,
+          bedrooms: 2,
+          bathrooms: 2,
+          area: 950,
+          furnishing: "semi-furnished",
+          locality: "Bandra West",
+          city: "Mumbai",
+          thumbnailUrl: "/placeholder.svg",
+          images: ["/placeholder.svg"],
+          available: true,
+        },
+        {
+          id: "prop-6",
+          title: "3 BHK Independent House",
+          type: "house",
+          rent: 40000,
+          deposit: 80000,
+          bedrooms: 3,
+          bathrooms: 2,
+          area: 1200,
+          furnishing: "unfurnished",
+          locality: "Jubilee Hills",
+          city: "Hyderabad",
+          thumbnailUrl: "/placeholder.svg",
+          images: ["/placeholder.svg"],
+          available: true,
         }
-        
-        console.log('API Response status:', response.status, response.statusText);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch properties: ${response.status} ${response.statusText}`);
-        }
-        
-        // Check content type - ensuring we get JSON
-        const contentType = response.headers.get('content-type');
-        console.log('Content-Type:', contentType);
-        
-        if (!contentType || !contentType.includes('application/json')) {
-          console.error('API response is not JSON format:', contentType);
-          // Use dummy data as fallback
-          setProperties(dummyProperties);
-          return;
-        }
-        
-        const data = await response.json();
-        console.log('Fetched data successfully:', data);
-        
-        // Get only first 6 properties for featured section
-        const featuredProperties = data.slice(0, 6);
-        setProperties(featuredProperties.length > 0 ? featuredProperties : dummyProperties);
-      } catch (error) {
-        console.error('Error fetching properties:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load featured properties. Showing sample properties instead.',
-          variant: 'destructive',
-        });
-        
-        // Use dummy properties as fallback
-        setProperties([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+      ];
 
-    fetchProperties();
-  }, [toast]);
+      setProperties(hardcodedProperties);
+      setLoading(false);
+    }, 1000); // Simulate 1 second loading time
+  }, []);
 
   if (loading) {
     return (
@@ -143,7 +175,7 @@ const FeaturedProperties = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {properties.map(property => (
             <PropertyCard 
-              key={property._id || property.id} 
+              key={property.id || property._id} 
               property={property} 
             />
           ))}
