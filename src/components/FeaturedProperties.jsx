@@ -15,11 +15,18 @@ const FeaturedProperties = () => {
     const fetchProperties = async () => {
       try {
         const response = await fetch('/api/properties');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch properties');
+        }
+        
         const data = await response.json();
         
-        // Get only first 4 properties for featured section
-        const featuredProperties = data.slice(0, 4);
+        // Get only first 6 properties for featured section
+        const featuredProperties = data.slice(0, 6);
         setProperties(featuredProperties);
+        
+        console.log('Fetched properties:', featuredProperties);
       } catch (error) {
         console.error('Error fetching properties:', error);
         toast({
@@ -45,11 +52,27 @@ const FeaturedProperties = () => {
               <p className="text-gray-600">Handpicked properties for you</p>
             </div>
           </div>
-          <div className="property-grid">
-            {[1, 2, 3, 4].map((item) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((item) => (
               <div key={item} className="h-72 bg-gray-200 animate-pulse rounded-lg"></div>
             ))}
           </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (properties.length === 0) {
+    return (
+      <section className="py-12 bg-cream">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-primary mb-4">Featured Properties</h2>
+          <p className="text-gray-600 mb-6">No properties available at the moment.</p>
+          <Link to="/post-property">
+            <Button variant="default" className="bg-primary hover:bg-primary/90">
+              Post Your Property
+            </Button>
+          </Link>
         </div>
       </section>
     );
@@ -71,13 +94,9 @@ const FeaturedProperties = () => {
           </Link>
         </div>
 
-        <div className="property-grid">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {properties.map(property => (
-            <PropertyCard key={property._id} property={{
-              ...property,
-              id: property._id, // Map _id to id for compatibility
-              available: property.available
-            }} />
+            <PropertyCard key={property._id} property={property} />
           ))}
         </div>
 
