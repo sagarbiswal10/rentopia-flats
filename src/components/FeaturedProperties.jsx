@@ -14,7 +14,8 @@ const FeaturedProperties = () => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const response = await fetch('/api/properties');
+        // Add a timestamp to prevent caching issues
+        const response = await fetch(`/api/properties?t=${Date.now()}`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch properties');
@@ -33,6 +34,14 @@ const FeaturedProperties = () => {
           title: 'Error',
           description: 'Failed to load featured properties.',
           variant: 'destructive',
+        });
+        
+        // If backend API fails, show some demo properties from the static data
+        // This ensures users always see some properties even if backend is down
+        import('@/data/properties').then(module => {
+          const demoProperties = module.properties.slice(0, 6);
+          setProperties(demoProperties);
+          console.log('Using demo properties as fallback');
         });
       } finally {
         setLoading(false);
@@ -96,7 +105,10 @@ const FeaturedProperties = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {properties.map(property => (
-            <PropertyCard key={property._id} property={property} />
+            <PropertyCard 
+              key={property._id || property.id} 
+              property={property} 
+            />
           ))}
         </div>
 

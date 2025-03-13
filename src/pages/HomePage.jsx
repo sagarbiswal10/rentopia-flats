@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,12 +5,9 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { MapPin, Home, IndianRupee, Check, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import PropertyCard from '@/components/PropertyCard';
-import { properties } from '@/data/properties';
+import FeaturedProperties from '@/components/FeaturedProperties';
 
 const HomePage = () => {
-  const featuredProperties = properties.slice(0, 3);
-
   return (
     <div className="min-h-screen bg-cream">
       <Navbar />
@@ -51,31 +47,8 @@ const HomePage = () => {
           </div>
         </section>
         
-        {/* Featured Properties */}
-        <section className="py-16 bg-cream">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-primary mb-4">Featured Properties</h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Discover handpicked properties that match your requirements
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredProperties.map(property => (
-                <PropertyCard key={property.id} property={property} />
-              ))}
-            </div>
-            
-            <div className="mt-12 text-center">
-              <Link to="/properties">
-                <Button className="bg-primary hover:bg-primary/90">
-                  View All Properties
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </section>
+        {/* Featured Properties - Using the FeaturedProperties component */}
+        <FeaturedProperties />
         
         {/* How It Works */}
         <section className="py-16 bg-white">
