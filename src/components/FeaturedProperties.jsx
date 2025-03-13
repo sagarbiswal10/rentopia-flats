@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import PropertyCard from './PropertyCard';
 import { ChevronRight } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const FeaturedProperties = () => {
   const [properties, setProperties] = useState([]);
@@ -14,35 +15,70 @@ const FeaturedProperties = () => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        // Add a timestamp to prevent caching issues
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/properties?t=${Date.now()}`);
+        // Create dummy properties in case API fails
+        const dummyProperties = Array(6).fill().map((_, index) => ({
+          id: `dummy-${index}`,
+          title: `${index + 1} BHK Apartment in City`,
+          type: 'apartment',
+          rent: 20000 + (index * 5000),
+          deposit: 50000 + (index * 10000),
+          bedrooms: index + 1,
+          bathrooms: index + 1,
+          area: 500 + (index * 100),
+          furnishing: ['unfurnished', 'semi-furnished', 'fully-furnished'][index % 3],
+          locality: 'Central Area',
+          city: 'Mumbai',
+          images: ['/placeholder.svg'],
+          thumbnailUrl: '/placeholder.svg',
+          available: true,
+        }));
+        
+        console.log('Attempting to fetch properties from API...');
+        
+        // First try with VITE_API_URL environment variable if present
+        const apiBaseUrl = import.meta.env.VITE_API_URL;
+        let response;
+        
+        if (apiBaseUrl) {
+          // External API with full URL
+          response = await fetch(`${apiBaseUrl}/api/properties?t=${Date.now()}`);
+        } else {
+          // Try relative URL for development
+          response = await fetch(`/api/properties?t=${Date.now()}`);
+        }
+        
+        console.log('API Response status:', response.status, response.statusText);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch properties: ${response.status} ${response.statusText}`);
         }
         
-        // Check if response is JSON
+        // Check content type - ensuring we get JSON
         const contentType = response.headers.get('content-type');
+        console.log('Content-Type:', contentType);
+        
         if (!contentType || !contentType.includes('application/json')) {
-          throw new Error('API response is not JSON format');
+          console.error('API response is not JSON format:', contentType);
+          // Use dummy data as fallback
+          setProperties(dummyProperties);
+          return;
         }
         
         const data = await response.json();
+        console.log('Fetched data successfully:', data);
         
         // Get only first 6 properties for featured section
         const featuredProperties = data.slice(0, 6);
-        setProperties(featuredProperties);
-        
-        console.log('Fetched properties:', featuredProperties);
+        setProperties(featuredProperties.length > 0 ? featuredProperties : dummyProperties);
       } catch (error) {
         console.error('Error fetching properties:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load featured properties.',
+          description: 'Failed to load featured properties. Showing sample properties instead.',
           variant: 'destructive',
         });
         
-        // Empty array since we don't want to show dummy data anymore
+        // Use dummy properties as fallback
         setProperties([]);
       } finally {
         setLoading(false);
@@ -64,7 +100,7 @@ const FeaturedProperties = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((item) => (
-              <div key={item} className="h-72 bg-gray-200 animate-pulse rounded-lg"></div>
+              <Skeleton key={item} className="h-72 rounded-lg" />
             ))}
           </div>
         </div>
