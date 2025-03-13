@@ -15,10 +15,16 @@ const FeaturedProperties = () => {
     const fetchProperties = async () => {
       try {
         // Add a timestamp to prevent caching issues
-        const response = await fetch(`/api/properties?t=${Date.now()}`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/properties?t=${Date.now()}`);
         
         if (!response.ok) {
-          throw new Error('Failed to fetch properties');
+          throw new Error(`Failed to fetch properties: ${response.status} ${response.statusText}`);
+        }
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('API response is not JSON format');
         }
         
         const data = await response.json();
@@ -36,13 +42,8 @@ const FeaturedProperties = () => {
           variant: 'destructive',
         });
         
-        // If backend API fails, show some demo properties from the static data
-        // This ensures users always see some properties even if backend is down
-        import('@/data/properties').then(module => {
-          const demoProperties = module.properties.slice(0, 6);
-          setProperties(demoProperties);
-          console.log('Using demo properties as fallback');
-        });
+        // Empty array since we don't want to show dummy data anymore
+        setProperties([]);
       } finally {
         setLoading(false);
       }
