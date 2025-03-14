@@ -162,7 +162,19 @@ export const UserProvider = ({ children }) => {
       const newRental = await response.json();
       
       // Update local rentals state
-      setUserRentals(prev => [...prev, newRental]);
+      setUserRentals(prev => {
+        // Check if this rental already exists in the array
+        const exists = prev.some(rental => rental._id === newRental._id);
+        if (exists) {
+          // Replace the existing rental
+          return prev.map(rental => 
+            rental._id === newRental._id ? newRental : rental
+          );
+        } else {
+          // Add the new rental
+          return [...prev, newRental];
+        }
+      });
       
       return newRental;
     } catch (error) {
@@ -253,6 +265,9 @@ export const UserProvider = ({ children }) => {
           rental._id === rentalId ? updatedRental : rental
         )
       );
+      
+      // After successful payment, refresh the properties list
+      getUserProperties();
       
       return updatedRental;
     } catch (error) {

@@ -1,6 +1,7 @@
 
 const Payment = require('../models/paymentModel');
 const Property = require('../models/propertyModel');
+const Rental = require('../models/rentalModel');
 const asyncHandler = require('express-async-handler');
 
 // @desc    Create a new payment
@@ -16,10 +17,16 @@ const createPayment = asyncHandler(async (req, res) => {
     throw new Error('Property not found');
   }
 
-  // Check if property is available
-  if (!property.available) {
+  // Check if property is already rented and payment completed by someone else
+  const existingCompletedRental = await Rental.findOne({
+    property: propertyId,
+    paymentStatus: 'paid',
+    status: 'active'
+  });
+
+  if (existingCompletedRental) {
     res.status(400);
-    throw new Error('Property is not available for rent');
+    throw new Error('Property is already rented');
   }
 
   // Create payment
@@ -30,6 +37,25 @@ const createPayment = asyncHandler(async (req, res) => {
     paymentMethod,
     status: 'completed', // For simplicity, in a real app, this would be integrated with a payment gateway
   });
+
+  // Find user's pending rental for this property
+  const userRental = await Rental.findOne({
+    property: propertyId,
+    user: req.user._id,
+    status: 'active',
+    paymentStatus: 'pending'
+  });
+
+  if (userRental) {
+    // Update rental payment status
+    userRental.paymentStatus = 'paid';
+    userRental.paymentId = payment._id;
+    await userRental.save();
+
+    // Update property availability
+    property.available = false;
+    await property.save();
+  }
 
   res.status(201).json(payment);
 });

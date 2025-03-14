@@ -45,9 +45,8 @@ const createRental = asyncHandler(async (req, res) => {
     totalAmount,
   });
 
-  // Update property availability after rental creation
-  property.available = false;
-  await property.save();
+  // Note: We no longer update property availability here
+  // Property availability will be updated after payment confirmation
 
   res.status(201).json(rental);
 });
