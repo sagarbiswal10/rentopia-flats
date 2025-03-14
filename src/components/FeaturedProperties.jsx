@@ -23,7 +23,12 @@ const FeaturedProperties = () => {
         
         const data = await response.json();
         console.log('Properties fetched from API:', data);
-        setProperties(data);
+        
+        // Only take available properties
+        const availableProperties = data.filter(property => property.available === true);
+        console.log('Available properties:', availableProperties.length);
+        
+        setProperties(availableProperties);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching properties:', error);

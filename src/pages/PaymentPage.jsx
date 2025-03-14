@@ -30,6 +30,7 @@ const PaymentPage = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [property, setProperty] = useState(null);
+  const [existingRental, setExistingRental] = useState(null);
   const [totalAmount, setTotalAmount] = useState(0);
   
   const form = useForm({
@@ -71,6 +72,23 @@ const PaymentPage = () => {
         
         // Calculate total amount (rent + deposit)
         setTotalAmount(propertyData.rent + propertyData.deposit);
+        
+        // Check if user already has a rental for this property
+        const rentalsResponse = await fetch('http://localhost:5000/api/rentals/user', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        if (rentalsResponse.ok) {
+          const userRentals = await rentalsResponse.json();
+          const rental = userRentals.find(r => r.property._id === rentalId && r.status === 'active');
+          
+          if (rental) {
+            console.log('Existing rental found:', rental);
+            setExistingRental(rental);
+          }
+        }
       } catch (error) {
         console.error('Error fetching property:', error);
         toast.error('Unable to load property details. Please try again.');
@@ -95,54 +113,108 @@ const PaymentPage = () => {
     setIsSubmitting(true);
     
     try {
-      // Create a new rental payment in the backend
-      const response = await fetch('http://localhost:5000/api/payments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          propertyId: property._id,
-          amount: totalAmount,
-          paymentMethod: values.paymentMethod,
-          cardDetails: values.paymentMethod === 'card' ? {
-            name: values.cardName,
-            number: values.cardNumber,
-            expiry: values.expiryDate,
-            cvv: values.cvv,
-          } : null,
-        }),
-      });
+      // If there's an existing rental with pending payment, update it instead of creating a new one
+      let rentalData;
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Payment failed');
+      if (existingRental && existingRental.paymentStatus === 'pending') {
+        console.log('Updating existing rental with payment information');
+        
+        // Create payment first
+        const paymentResponse = await fetch('http://localhost:5000/api/payments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            propertyId: property._id,
+            amount: totalAmount,
+            paymentMethod: values.paymentMethod,
+            cardDetails: values.paymentMethod === 'card' ? {
+              name: values.cardName,
+              number: values.cardNumber,
+              expiry: values.expiryDate,
+              cvv: values.cvv,
+            } : null,
+          }),
+        });
+        
+        if (!paymentResponse.ok) {
+          const errorData = await paymentResponse.json();
+          throw new Error(errorData.message || 'Payment failed');
+        }
+        
+        const paymentData = await paymentResponse.json();
+        
+        // Update the existing rental with payment information
+        const updateResponse = await fetch(`http://localhost:5000/api/rentals/${existingRental._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            paymentStatus: 'paid',
+            paymentId: paymentData._id,
+          }),
+        });
+        
+        if (!updateResponse.ok) {
+          const errorData = await updateResponse.json();
+          throw new Error(errorData.message || 'Failed to update rental payment status');
+        }
+        
+        rentalData = await updateResponse.json();
+      } else {
+        // Create a new payment
+        const paymentResponse = await fetch('http://localhost:5000/api/payments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            propertyId: property._id,
+            amount: totalAmount,
+            paymentMethod: values.paymentMethod,
+            cardDetails: values.paymentMethod === 'card' ? {
+              name: values.cardName,
+              number: values.cardNumber,
+              expiry: values.expiryDate,
+              cvv: values.cvv,
+            } : null,
+          }),
+        });
+        
+        if (!paymentResponse.ok) {
+          const errorData = await paymentResponse.json();
+          throw new Error(errorData.message || 'Payment failed');
+        }
+        
+        const paymentData = await paymentResponse.json();
+        
+        // Create a rental record after successful payment
+        const rentalResponse = await fetch('http://localhost:5000/api/rentals', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            propertyId: property._id,
+            startDate: new Date().toISOString(),
+            endDate: new Date(new Date().setMonth(new Date().getMonth() + 11)).toISOString(), // 12 months rental
+            totalAmount,
+          }),
+        });
+        
+        if (!rentalResponse.ok) {
+          const errorData = await rentalResponse.json();
+          throw new Error(errorData.message || 'Failed to create rental record');
+        }
+        
+        rentalData = await rentalResponse.json();
       }
-      
-      const paymentData = await response.json();
-      
-      // Create a rental record after successful payment
-      const rentalResponse = await fetch('http://localhost:5000/api/rentals', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          propertyId: property._id,
-          paymentId: paymentData._id,
-          startDate: new Date().toISOString(),
-          endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
-        }),
-      });
-      
-      if (!rentalResponse.ok) {
-        const errorData = await rentalResponse.json();
-        throw new Error(errorData.message || 'Failed to create rental record');
-      }
-      
-      const newRental = await rentalResponse.json();
       
       toast.success("Payment successful! Property rented successfully.");
       
@@ -150,12 +222,13 @@ const PaymentPage = () => {
       setTimeout(() => {
         navigate('/payment-success', { 
           state: { 
-            rental: newRental,
+            rental: rentalData,
             paymentMethod: values.paymentMethod 
           } 
         });
       }, 1000);
     } catch (error) {
+      console.error('Payment error:', error);
       toast.error(error.message || "Payment failed. Please try again.");
     } finally {
       setIsSubmitting(false);

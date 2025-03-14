@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -43,9 +42,14 @@ const UserDashboardPage = () => {
   }
 
   // Function to handle the pay rent button click
-  const handlePayRent = (rentalId) => {
-    console.log(`Navigating to payment for rental: ${rentalId}`);
-    navigate(`/payment/${rentalId}`);
+  const handlePayRent = (rental) => {
+    // We'll directly navigate to the payment page with the property ID
+    if (rental && rental.property && rental.property._id) {
+      console.log(`Navigating to payment for property: ${rental.property._id}`);
+      navigate(`/payment/${rental.property._id}`);
+    } else {
+      toast.error("Cannot process payment: Missing property information");
+    }
   };
   
   return (
@@ -183,7 +187,7 @@ const UserDashboardPage = () => {
                                   {rental.paymentStatus !== 'paid' && (
                                     <Button 
                                       size="sm"
-                                      onClick={() => handlePayRent(rental.property?._id)}
+                                      onClick={() => handlePayRent(rental)}
                                     >
                                       Pay Rent
                                     </Button>

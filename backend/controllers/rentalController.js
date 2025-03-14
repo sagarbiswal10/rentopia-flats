@@ -16,10 +16,16 @@ const createRental = asyncHandler(async (req, res) => {
     throw new Error('Property not found');
   }
 
-  // Check if property is available
-  if (!property.available) {
-    res.status(400);
-    throw new Error('Property is not available for rent');
+  // Check if the current user already has an active rental for this property
+  const existingRental = await Rental.findOne({
+    property: propertyId,
+    user: req.user._id,
+    status: 'active'
+  });
+
+  if (existingRental) {
+    // If a rental already exists, return it instead of creating a new one
+    return res.status(200).json(existingRental);
   }
 
   // Check if property is not owned by the current user
