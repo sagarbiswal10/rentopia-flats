@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -8,12 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, MapPin, List, Grid3X3 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 const PropertiesPage = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialLocationQuery = queryParams.get('city') || '';
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState(initialLocationQuery);
   const [properties, setProperties] = useState([]);
@@ -26,27 +28,27 @@ const PropertiesPage = () => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const response = await fetch('/api/properties');
+        const response = await fetch('http://localhost:5000/api/properties');
         if (!response.ok) {
           throw new Error('Failed to fetch properties');
         }
         const data = await response.json();
+        console.log('Properties loaded:', data.length);
         setProperties(data);
         setFilteredProperties(data);
       } catch (error) {
         console.error('Error fetching properties:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load properties.',
-          variant: 'destructive',
-        });
+        toast.error('Failed to load properties. Please try again.');
+        // Set empty array to avoid undefined errors
+        setProperties([]);
+        setFilteredProperties([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProperties();
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     if (initialLocationQuery && properties.length > 0) {
@@ -67,9 +69,9 @@ const PropertiesPage = () => {
       const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(property => {
         return (
-          property.locality.toLowerCase().includes(searchLower) ||
-          property.city.toLowerCase().includes(searchLower) ||
-          property.title.toLowerCase().includes(searchLower)
+          property.locality?.toLowerCase().includes(searchLower) ||
+          property.city?.toLowerCase().includes(searchLower) ||
+          property.title?.toLowerCase().includes(searchLower)
         );
       });
     }
@@ -111,7 +113,7 @@ const PropertiesPage = () => {
     if (activeFilters.amenities && activeFilters.amenities.length > 0) {
       filtered = filtered.filter(property => {
         return activeFilters.amenities.every(amenity => 
-          property.amenities.includes(amenity)
+          property.amenities && property.amenities.includes(amenity)
         );
       });
     }
@@ -245,7 +247,7 @@ const PropertiesPage = () => {
               </div>
               
               {filteredProperties.length > 0 ? (
-                <div className={viewMode === 'grid' ? 'property-grid' : 'space-y-4'}>
+                <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
                   {filteredProperties.map(property => (
                     <PropertyCard 
                       key={property._id} 

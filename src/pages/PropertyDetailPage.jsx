@@ -29,8 +29,10 @@ const PropertyDetailPage = () => {
         }
         
         const data = await response.json();
+        console.log('Property fetched successfully:', data);
         setProperty(data);
       } catch (err) {
+        console.error('Error fetching property:', err);
         setError(err.message);
         toast.error('Failed to load property details');
       } finally {
@@ -114,16 +116,45 @@ const PropertyDetailPage = () => {
         totalAmount: property.rent + property.deposit,
       };
       
-      // Create a new rental
-      const newRental = await addRental(rentalData);
+      // Log the rental data and token being used
+      console.log('Creating rental with data:', rentalData);
+      console.log('Using token:', token ? 'Token exists' : 'No token');
       
-      if (newRental && newRental._id) {
-        // Redirect to payment page
-        navigate(`/payment/${newRental._id}`);
-      } else {
-        throw new Error("Failed to create rental");
+      // Option 1: Use addRental from context if it exists
+      if (typeof addRental === 'function') {
+        const newRental = await addRental(rentalData);
+        
+        if (newRental && newRental._id) {
+          console.log('Rental created successfully, redirecting to payment page');
+          // Redirect to payment page
+          navigate(`/payment/${newRental._id}`);
+          return;
+        }
       }
+      
+      // Option 2: Direct API call if addRental fails or doesn't exist
+      const response = await fetch('http://localhost:5000/api/rentals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(rentalData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create rental");
+      }
+      
+      const newRental = await response.json();
+      console.log('Rental created via direct API call:', newRental);
+      
+      // Redirect to payment page
+      navigate(`/payment/${newRental._id}`);
+      
     } catch (error) {
+      console.error('Error creating rental:', error);
       toast.error(error.message || "Failed to process your request. Please try again.");
       setIsRenting(false);
     }
