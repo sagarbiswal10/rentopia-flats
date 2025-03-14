@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -36,7 +35,7 @@ const propertySchema = z.object({
 });
 
 const ListPropertyPage = () => {
-  const { user, addProperty } = useUser();
+  const { user, token } = useUser();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [amenities, setAmenities] = useState([]);
@@ -53,13 +52,13 @@ const ListPropertyPage = () => {
     resolver: zodResolver(propertySchema),
     defaultValues: {
       title: "",
-      type: "Apartment",
+      type: "apartment",
       rent: "",
       deposit: "",
       bedrooms: "",
       bathrooms: "",
       area: "",
-      furnishing: "Semi-Furnished",
+      furnishing: "semi-furnished",
       locality: "",
       city: "",
       state: "",
@@ -94,28 +93,35 @@ const ListPropertyPage = () => {
     setIsSubmitting(true);
     
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Create a new property object
-      const newProperty = {
-        id: Date.now(),
+      // Create property data object
+      const propertyData = {
         ...values,
-        ownerId: user.id,
-        ownerName: user.name,
-        ownerPhone: "+91 9876543210", // Example phone number
+        images: ["/placeholder.svg"], // Placeholder images array (would be replaced with actual images in production)
         thumbnailUrl: "/placeholder.svg", // Placeholder image
-        images: ["/placeholder.svg"], // Placeholder images array
-        createdAt: new Date().toISOString(),
       };
       
-      // Add property to user's properties
-      addProperty(newProperty);
+      // Send data to backend API
+      const response = await fetch('http://localhost:5000/api/properties', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(propertyData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create property");
+      }
+      
+      const newProperty = await response.json();
       
       toast.success("Property listed successfully!");
-      navigate('/properties');
+      navigate(`/property/${newProperty._id}`);
     } catch (error) {
-      toast.error("Failed to list property. Please try again.");
+      console.error("Error creating property:", error);
+      toast.error(error.message || "Failed to list property. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -175,11 +181,11 @@ const ListPropertyPage = () => {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="Apartment">Apartment</SelectItem>
-                                <SelectItem value="House">House</SelectItem>
-                                <SelectItem value="Villa">Villa</SelectItem>
-                                <SelectItem value="PG">PG</SelectItem>
-                                <SelectItem value="Hostel">Hostel</SelectItem>
+                                <SelectItem value="apartment">Apartment</SelectItem>
+                                <SelectItem value="house">House</SelectItem>
+                                <SelectItem value="villa">Villa</SelectItem>
+                                <SelectItem value="condo">Condo</SelectItem>
+                                <SelectItem value="office">Office Space</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -200,9 +206,9 @@ const ListPropertyPage = () => {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="Fully-Furnished">Fully Furnished</SelectItem>
-                                <SelectItem value="Semi-Furnished">Semi-Furnished</SelectItem>
-                                <SelectItem value="Unfurnished">Unfurnished</SelectItem>
+                                <SelectItem value="fully-furnished">Fully Furnished</SelectItem>
+                                <SelectItem value="semi-furnished">Semi-Furnished</SelectItem>
+                                <SelectItem value="unfurnished">Unfurnished</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />

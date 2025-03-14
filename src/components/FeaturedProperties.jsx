@@ -13,112 +13,33 @@ const FeaturedProperties = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Simulate loading for a better UX
-    setTimeout(() => {
-      // Hardcoded properties data - no API call required
-      const hardcodedProperties = [
-        {
-          id: "prop-1",
-          title: "2 BHK Furnished Apartment",
-          type: "apartment",
-          rent: 25000,
-          deposit: 50000,
-          bedrooms: 2,
-          bathrooms: 2,
-          area: 850,
-          furnishing: "fully-furnished",
-          locality: "Indiranagar",
-          city: "Bangalore",
-          thumbnailUrl: "/placeholder.svg",
-          images: ["/placeholder.svg"],
-          available: true,
-        },
-        {
-          id: "prop-2",
-          title: "3 BHK Luxury Villa",
-          type: "villa",
-          rent: 45000,
-          deposit: 90000,
-          bedrooms: 3,
-          bathrooms: 3,
-          area: 1500,
-          furnishing: "fully-furnished",
-          locality: "Koramangala",
-          city: "Bangalore",
-          thumbnailUrl: "/placeholder.svg",
-          images: ["/placeholder.svg"],
-          available: true,
-        },
-        {
-          id: "prop-3",
-          title: "1 BHK Studio Apartment",
-          type: "apartment",
-          rent: 15000,
-          deposit: 30000,
-          bedrooms: 1,
-          bathrooms: 1,
-          area: 500,
-          furnishing: "semi-furnished",
-          locality: "HSR Layout",
-          city: "Bangalore",
-          thumbnailUrl: "/placeholder.svg",
-          images: ["/placeholder.svg"],
-          available: true,
-        },
-        {
-          id: "prop-4",
-          title: "4 BHK Penthouse",
-          type: "penthouse",
-          rent: 75000,
-          deposit: 150000,
-          bedrooms: 4,
-          bathrooms: 4,
-          area: 2200,
-          furnishing: "fully-furnished",
-          locality: "Whitefield",
-          city: "Bangalore",
-          thumbnailUrl: "/placeholder.svg",
-          images: ["/placeholder.svg"],
-          available: true,
-        },
-        {
-          id: "prop-5",
-          title: "2 BHK Apartment with Sea View",
-          type: "apartment",
-          rent: 35000,
-          deposit: 70000,
-          bedrooms: 2,
-          bathrooms: 2,
-          area: 950,
-          furnishing: "semi-furnished",
-          locality: "Bandra West",
-          city: "Mumbai",
-          thumbnailUrl: "/placeholder.svg",
-          images: ["/placeholder.svg"],
-          available: true,
-        },
-        {
-          id: "prop-6",
-          title: "3 BHK Independent House",
-          type: "house",
-          rent: 40000,
-          deposit: 80000,
-          bedrooms: 3,
-          bathrooms: 2,
-          area: 1200,
-          furnishing: "unfurnished",
-          locality: "Jubilee Hills",
-          city: "Hyderabad",
-          thumbnailUrl: "/placeholder.svg",
-          images: ["/placeholder.svg"],
-          available: true,
+    const fetchProperties = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/properties');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
-      ];
+        
+        const data = await response.json();
+        console.log('Properties fetched from API:', data);
+        setProperties(data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching properties:', error);
+        toast({
+          title: "Error fetching properties",
+          description: "Could not load properties from server.",
+          variant: "destructive",
+        });
+        // Fall back to empty array if fetch fails
+        setProperties([]);
+        setLoading(false);
+      }
+    };
 
-      setProperties(hardcodedProperties);
-      setLoading(false);
-    }, 1000); // Simulate 1 second loading time
-  }, []);
+    fetchProperties();
+  }, [toast]);
 
   if (loading) {
     return (
@@ -175,7 +96,7 @@ const FeaturedProperties = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {properties.map(property => (
             <PropertyCard 
-              key={property.id || property._id} 
+              key={property._id || property.id} 
               property={property} 
             />
           ))}
