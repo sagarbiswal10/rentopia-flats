@@ -52,7 +52,9 @@ const PaymentPage = () => {
     
     const fetchProperty = async () => {
       try {
-        // We need to fetch the property that the user wants to rent
+        console.log(`Fetching property with ID: ${rentalId}`);
+        
+        // Fetch the property that the user wants to rent
         const response = await fetch(`http://localhost:5000/api/properties/${rentalId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -60,10 +62,11 @@ const PaymentPage = () => {
         });
         
         if (!response.ok) {
-          throw new Error('Failed to fetch property details');
+          throw new Error(`Failed to fetch property details: ${response.status}`);
         }
         
         const propertyData = await response.json();
+        console.log('Property data fetched:', propertyData);
         setProperty(propertyData);
         
         // Calculate total amount (rent + deposit)
@@ -71,11 +74,16 @@ const PaymentPage = () => {
       } catch (error) {
         console.error('Error fetching property:', error);
         toast.error('Unable to load property details. Please try again.');
-        navigate('/properties');
+        setTimeout(() => navigate('/properties'), 1500);
       }
     };
     
-    fetchProperty();
+    if (rentalId) {
+      fetchProperty();
+    } else {
+      toast.error('Property ID is missing');
+      navigate('/dashboard');
+    }
   }, [rentalId, user, navigate, token]);
   
   const onSubmit = async (values) => {

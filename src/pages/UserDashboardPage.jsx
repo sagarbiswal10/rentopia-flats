@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Home, Building, IndianRupee, MapPin } from 'lucide-react';
+import { Home, Building, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 const UserDashboardPage = () => {
@@ -41,6 +41,12 @@ const UserDashboardPage = () => {
   if (!user) {
     return null;
   }
+
+  // Function to handle the pay rent button click
+  const handlePayRent = (rentalId) => {
+    console.log(`Navigating to payment for rental: ${rentalId}`);
+    navigate(`/payment/${rentalId}`);
+  };
   
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -177,7 +183,7 @@ const UserDashboardPage = () => {
                                   {rental.paymentStatus !== 'paid' && (
                                     <Button 
                                       size="sm"
-                                      onClick={() => navigate(`/payment/${rental._id}`)}
+                                      onClick={() => handlePayRent(rental.property?._id)}
                                     >
                                       Pay Rent
                                     </Button>

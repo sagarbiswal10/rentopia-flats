@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,11 +5,12 @@ import PropertyCard from './PropertyCard';
 import { ChevronRight } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 const FeaturedProperties = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -27,10 +27,8 @@ const FeaturedProperties = () => {
         setLoading(false);
       } catch (error) {
         console.error('Error fetching properties:', error);
-        toast({
-          title: "Error fetching properties",
+        toast("Error fetching properties", {
           description: "Could not load properties from server.",
-          variant: "destructive",
         });
         // Fall back to empty array if fetch fails
         setProperties([]);
@@ -39,7 +37,7 @@ const FeaturedProperties = () => {
     };
 
     fetchProperties();
-  }, [toast]);
+  }, []);
 
   if (loading) {
     return (
@@ -77,7 +75,7 @@ const FeaturedProperties = () => {
     );
   }
 
-  // Limit to 6 properties for display
+  // Limit to exactly 6 properties for display
   const featuredProperties = properties.slice(0, 6);
 
   return (
