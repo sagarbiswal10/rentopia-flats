@@ -8,12 +8,13 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Home, Building, User, IndianRupee, MapPin } from 'lucide-react';
+import { Home, Building, User, IndianRupee, MapPin, Phone, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 const LandlordDashboardPage = () => {
   const { user, loading, token, userProperties, getUserProperties } = useUser();
   const [propertyRenters, setPropertyRenters] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -32,6 +33,7 @@ const LandlordDashboardPage = () => {
   const fetchPropertyRenters = async () => {
     if (!token) return;
     
+    setIsLoading(true);
     try {
       const response = await fetch('http://localhost:5000/api/rentals/property-owners', {
         headers: {
@@ -41,15 +43,22 @@ const LandlordDashboardPage = () => {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('Property renters data:', data);
         setPropertyRenters(data);
+      } else {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        toast.error(errorData.message || 'Failed to load rental information');
       }
     } catch (error) {
       console.error('Error fetching property renters:', error);
       toast.error('Failed to load rental information');
+    } finally {
+      setIsLoading(false);
     }
   };
   
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Navbar />
@@ -220,9 +229,23 @@ const LandlordDashboardPage = () => {
                               <div className="flex justify-between mb-2">
                                 <div>
                                   <h4 className="font-semibold">{rental.property.title}</h4>
-                                  <p className="text-sm text-gray-500">
-                                    Rented by: {rental.user.name} ({rental.user.email})
-                                  </p>
+                                  <div className="mt-2 p-2 border rounded-md bg-gray-50">
+                                    <p className="text-sm font-medium">Renter Information:</p>
+                                    <div className="mt-1 flex items-center">
+                                      <User className="h-4 w-4 mr-2 text-gray-500" />
+                                      <span>{rental.user.name}</span>
+                                    </div>
+                                    <div className="mt-1 flex items-center">
+                                      <Mail className="h-4 w-4 mr-2 text-gray-500" />
+                                      <span>{rental.user.email}</span>
+                                    </div>
+                                    {rental.user.phone && (
+                                      <div className="mt-1 flex items-center">
+                                        <Phone className="h-4 w-4 mr-2 text-gray-500" />
+                                        <span>{rental.user.phone}</span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                                 <Badge className={rental.paymentStatus === 'paid' ? 'bg-green-500' : 'bg-yellow-500'}>
                                   {rental.paymentStatus === 'paid' ? 'Paid' : 'Payment Pending'}

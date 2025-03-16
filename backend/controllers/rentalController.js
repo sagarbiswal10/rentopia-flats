@@ -16,6 +16,18 @@ const createRental = asyncHandler(async (req, res) => {
     throw new Error('Property not found');
   }
 
+  // Check if property is already rented and payment completed by someone else
+  const existingPaidRental = await Rental.findOne({
+    property: propertyId,
+    paymentStatus: 'paid',
+    status: 'active'
+  });
+
+  if (existingPaidRental) {
+    res.status(400);
+    throw new Error('Property is already rented');
+  }
+
   // Check if the current user already has an active rental for this property
   const existingRental = await Rental.findOne({
     property: propertyId,
@@ -45,7 +57,6 @@ const createRental = asyncHandler(async (req, res) => {
     totalAmount,
   });
 
-  // Note: We no longer update property availability here
   // Property availability will be updated after payment confirmation
 
   res.status(201).json(rental);
@@ -56,7 +67,10 @@ const createRental = asyncHandler(async (req, res) => {
 // @access  Private
 const getUserRentals = asyncHandler(async (req, res) => {
   const rentals = await Rental.find({ user: req.user._id })
-    .populate('property')
+    .populate({
+      path: 'property',
+      select: 'title thumbnailUrl locality city rent'
+    })
     .sort({ createdAt: -1 });
 
   res.json(rentals);
