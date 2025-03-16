@@ -8,6 +8,7 @@ const {
   getUserProperties,
   updateProperty,
   deleteProperty,
+  updatePropertyAvailability,
 } = require('../controllers/propertyController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -18,5 +19,6 @@ router
   .get(getPropertyById)
   .put(protect, updateProperty)
   .delete(protect, deleteProperty);
+router.route('/:id/availability').put(protect, updatePropertyAvailability);
 
 module.exports = router;

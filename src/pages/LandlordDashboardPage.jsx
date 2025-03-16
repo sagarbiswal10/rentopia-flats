@@ -8,32 +8,15 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Home, Building, User, IndianRupee, MapPin, Phone, Mail } from 'lucide-react';
+import { Home, Building, User, IndianRupee, MapPin, Phone, Mail, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 const LandlordDashboardPage = () => {
   const { user, loading, token, userProperties, getUserProperties } = useUser();
   const [propertyRenters, setPropertyRenters] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
-  
-  useEffect(() => {
-    if (!loading && !token) {
-      toast.error("You must be logged in to view your dashboard");
-      navigate('/login');
-      return;
-    } 
-    
-    // Only proceed if we have a token
-    if (token) {
-      console.log('Token exists, fetching data for landlord dashboard');
-      // Refresh user properties
-      getUserProperties();
-      
-      // Fetch users who have rented properties
-      fetchPropertyRenters();
-    }
-  }, [loading, token, navigate, getUserProperties]);
   
   const fetchPropertyRenters = async () => {
     if (!token) return;
@@ -64,6 +47,32 @@ const LandlordDashboardPage = () => {
     }
   };
   
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await getUserProperties();
+    await fetchPropertyRenters();
+    toast.success('Dashboard refreshed');
+    setRefreshing(false);
+  };
+  
+  useEffect(() => {
+    if (!loading && !token) {
+      toast.error("You must be logged in to view your dashboard");
+      navigate('/login');
+      return;
+    } 
+    
+    // Only proceed if we have a token
+    if (token) {
+      console.log('Token exists, fetching data for landlord dashboard');
+      // Refresh user properties
+      getUserProperties();
+      
+      // Fetch users who have rented properties
+      fetchPropertyRenters();
+    }
+  }, [loading, token, navigate, getUserProperties]);
+  
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
@@ -86,6 +95,18 @@ const LandlordDashboardPage = () => {
       
       <main className="flex-grow py-8">
         <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Landlord Dashboard</h1>
+            <Button 
+              variant="outline" 
+              onClick={handleRefresh} 
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+          
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Sidebar - User Info */}
             <div className="lg:col-span-1">
@@ -234,22 +255,30 @@ const LandlordDashboardPage = () => {
                             <div className="p-4">
                               <div className="flex justify-between mb-2">
                                 <div>
-                                  <h4 className="font-semibold">{rental.property.title}</h4>
+                                  <h4 className="font-semibold">
+                                    {rental.property ? rental.property.title : "Property"}
+                                  </h4>
                                   <div className="mt-2 p-2 border rounded-md bg-gray-50">
                                     <p className="text-sm font-medium">Renter Information:</p>
-                                    <div className="mt-1 flex items-center">
-                                      <User className="h-4 w-4 mr-2 text-gray-500" />
-                                      <span>{rental.user.name}</span>
-                                    </div>
-                                    <div className="mt-1 flex items-center">
-                                      <Mail className="h-4 w-4 mr-2 text-gray-500" />
-                                      <span>{rental.user.email}</span>
-                                    </div>
-                                    {rental.user.phone && (
-                                      <div className="mt-1 flex items-center">
-                                        <Phone className="h-4 w-4 mr-2 text-gray-500" />
-                                        <span>{rental.user.phone}</span>
-                                      </div>
+                                    {rental.user ? (
+                                      <>
+                                        <div className="mt-1 flex items-center">
+                                          <User className="h-4 w-4 mr-2 text-gray-500" />
+                                          <span>{rental.user.name}</span>
+                                        </div>
+                                        <div className="mt-1 flex items-center">
+                                          <Mail className="h-4 w-4 mr-2 text-gray-500" />
+                                          <span>{rental.user.email}</span>
+                                        </div>
+                                        {rental.user.phone && (
+                                          <div className="mt-1 flex items-center">
+                                            <Phone className="h-4 w-4 mr-2 text-gray-500" />
+                                            <span>{rental.user.phone}</span>
+                                          </div>
+                                        )}
+                                      </>
+                                    ) : (
+                                      <p className="text-sm text-gray-500">User information not available</p>
                                     )}
                                   </div>
                                 </div>

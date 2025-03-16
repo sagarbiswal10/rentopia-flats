@@ -80,19 +80,28 @@ const getUserRentals = asyncHandler(async (req, res) => {
 // @route   GET /api/rentals/property-owners
 // @access  Private
 const getPropertyOwnersRentals = asyncHandler(async (req, res) => {
-  // First, get all properties owned by this user
-  const properties = await Property.find({ user: req.user._id }).select('_id');
-  
-  // Get property IDs
-  const propertyIds = properties.map(property => property._id);
-  
-  // Find all rentals for these properties
-  const rentals = await Rental.find({ property: { $in: propertyIds } })
-    .populate('property')
-    .populate('user', 'name email phone')
-    .sort({ createdAt: -1 });
-  
-  res.json(rentals);
+  try {
+    // First, get all properties owned by this user
+    const properties = await Property.find({ user: req.user._id }).select('_id');
+    
+    // Get property IDs
+    const propertyIds = properties.map(property => property._id);
+    
+    console.log(`Found ${propertyIds.length} properties for owner with ID: ${req.user._id}`);
+    
+    // Find all rentals for these properties
+    const rentals = await Rental.find({ property: { $in: propertyIds } })
+      .populate('property')
+      .populate('user', 'name email phone')
+      .sort({ createdAt: -1 });
+    
+    console.log(`Found ${rentals.length} rentals for owner properties`);
+    res.json(rentals);
+  } catch (error) {
+    console.error('Error in getPropertyOwnersRentals:', error);
+    res.status(500);
+    throw new Error('Server error when fetching property owner rentals');
+  }
 });
 
 // @desc    Get rental by ID
@@ -180,42 +189,53 @@ const updateRentalStatus = asyncHandler(async (req, res) => {
 // @route   DELETE /api/rentals/:id
 // @access  Private
 const cancelRental = asyncHandler(async (req, res) => {
-  const rental = await Rental.findById(req.params.id);
+  try {
+    console.log(`Processing rental cancellation for ID: ${req.params.id}`);
+    const rental = await Rental.findById(req.params.id);
 
-  if (!rental) {
-    res.status(404);
-    throw new Error('Rental not found');
+    if (!rental) {
+      res.status(404);
+      throw new Error('Rental not found');
+    }
+
+    // Only the renter can cancel their rental
+    if (rental.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+      res.status(401);
+      throw new Error('Not authorized to cancel this rental');
+    }
+
+    // Can only cancel rentals with pending payment
+    if (rental.paymentStatus !== 'pending') {
+      res.status(400);
+      throw new Error('Cannot cancel a rental that has already been paid');
+    }
+
+    // Make the property available again
+    const propertyId = rental.property;
+    console.log(`Making property ${propertyId} available again`);
+    
+    const property = await Property.findById(propertyId);
+    if (property) {
+      property.available = true;
+      await property.save();
+      console.log(`Property ${propertyId} availability set to true after rental cancellation`);
+    } else {
+      console.error(`Property ${propertyId} not found during rental cancellation`);
+    }
+
+    // Delete the rental record
+    await Rental.deleteOne({ _id: req.params.id });
+    console.log(`Rental ${req.params.id} successfully deleted`);
+
+    // Return the property ID so the client knows which property was made available
+    res.json({ 
+      message: 'Rental cancelled successfully',
+      propertyId: propertyId
+    });
+  } catch (error) {
+    console.error('Error in cancelRental:', error);
+    throw error;
   }
-
-  // Only the renter can cancel their rental
-  if (rental.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
-    res.status(401);
-    throw new Error('Not authorized to cancel this rental');
-  }
-
-  // Can only cancel rentals with pending payment
-  if (rental.paymentStatus !== 'pending') {
-    res.status(400);
-    throw new Error('Cannot cancel a rental that has already been paid');
-  }
-
-  // Make the property available again
-  const property = await Property.findById(rental.property);
-  if (property) {
-    property.available = true;
-    await property.save();
-    console.log(`Property ${property._id} availability set to true after rental cancellation`);
-  } else {
-    console.error(`Property ${rental.property} not found during rental cancellation`);
-  }
-
-  // Delete the rental record
-  await Rental.deleteOne({ _id: req.params.id });
-
-  res.json({ 
-    message: 'Rental cancelled successfully',
-    propertyId: rental.property
-  });
 });
 
 module.exports = {

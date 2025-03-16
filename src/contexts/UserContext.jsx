@@ -1,4 +1,6 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { toast } from 'sonner';
 
 const UserContext = createContext(null);
 
@@ -168,6 +170,42 @@ export const UserProvider = ({ children }) => {
     }
   };
 
+  const cancelRental = async (rentalId) => {
+    if (!token) return null;
+    
+    try {
+      console.log(`Cancelling rental: ${rentalId}`);
+      const response = await fetch(`http://localhost:5000/api/rentals/${rentalId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to cancel rental');
+      }
+      
+      const data = await response.json();
+      console.log('Rental cancelled successfully:', data);
+      
+      // Remove the cancelled rental from state
+      setUserRentals(prev => prev.filter(rental => rental._id !== rentalId));
+      
+      // Refresh properties to get updated availability
+      await getUserProperties();
+      
+      toast.success('Rental cancelled successfully');
+      
+      return data;
+    } catch (error) {
+      console.error('Cancel rental error:', error);
+      toast.error(error.message || 'Failed to cancel rental');
+      throw error;
+    }
+  };
+
   const getUserProperties = async (currentToken = token) => {
     if (!currentToken) return [];
     
@@ -270,6 +308,7 @@ export const UserProvider = ({ children }) => {
       updateUser,
       addProperty,
       addRental,
+      cancelRental,
       getUserProperties,
       getUserRentals,
       updateRentalPaymentStatus

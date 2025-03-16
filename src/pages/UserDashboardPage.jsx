@@ -13,7 +13,17 @@ import { Home, Building, MapPin, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const UserDashboardPage = () => {
-  const { user, loading, token, userProperties, userRentals, getUserProperties, getUserRentals, logout } = useUser();
+  const { 
+    user, 
+    loading, 
+    token, 
+    userProperties, 
+    userRentals, 
+    getUserProperties, 
+    getUserRentals, 
+    cancelRental,
+    logout 
+  } = useUser();
   const navigate = useNavigate();
   const [isCancelling, setIsCancelling] = useState(false);
   
@@ -34,34 +44,16 @@ const UserDashboardPage = () => {
     
     setIsCancelling(true);
     try {
-      console.log(`Cancelling rental: ${rentalId}`);
-      const response = await fetch(`http://localhost:5000/api/rentals/${rentalId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to cancel rental');
-      }
-      
-      const data = await response.json();
-      console.log('Rental cancelled successfully:', data);
-      
-      // Refresh rentals after cancellation
-      await getUserRentals();
-      // Also refresh properties as availability may have changed
-      await getUserProperties();
-      
-      toast.success('Rental cancelled successfully');
+      // Use the cancelRental method from UserContext
+      await cancelRental(rentalId);
       
       // Navigate to properties page to see all available properties
-      navigate('/properties');
+      // Refresh the properties page to see the updated list
+      setTimeout(() => {
+        navigate('/properties');
+      }, 1000);
     } catch (error) {
-      console.error('Error cancelling rental:', error);
-      toast.error(error.message || 'Failed to cancel rental');
+      console.error('Error cancelling rental from dashboard:', error);
     } finally {
       setIsCancelling(false);
     }
@@ -76,7 +68,7 @@ const UserDashboardPage = () => {
       
       if (propertyId) {
         console.log(`Navigating to payment for property: ${propertyId}`);
-        navigate(`/payment/${propertyId}`);
+        navigate(`/payment/${propertyId}`, { state: { rentalId: rental._id } });
       } else {
         toast.error("Cannot process payment: Missing property ID");
       }
