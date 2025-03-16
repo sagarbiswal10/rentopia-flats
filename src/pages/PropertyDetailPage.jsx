@@ -13,12 +13,13 @@ import { toast } from 'sonner';
 
 const PropertyDetailPage = () => {
   const { id } = useParams();
-  const { user, token, addRental } = useUser();
+  const { user, token, addRental, userRentals } = useUser();
   const navigate = useNavigate();
   const [isRenting, setIsRenting] = useState(false);
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [existingRental, setExistingRental] = useState(null);
   
   useEffect(() => {
     const fetchProperty = async () => {
@@ -42,6 +43,20 @@ const PropertyDetailPage = () => {
     
     fetchProperty();
   }, [id]);
+
+  // Check if user already has a rental for this property
+  useEffect(() => {
+    if (user && userRentals && userRentals.length > 0 && id) {
+      const rental = userRentals.find(r => 
+        r.property && r.property._id === id && r.status === 'active'
+      );
+      
+      if (rental) {
+        console.log('User already has a rental for this property:', rental);
+        setExistingRental(rental);
+      }
+    }
+  }, [user, userRentals, id]);
 
   if (loading) {
     return (
@@ -108,6 +123,12 @@ const PropertyDetailPage = () => {
     setIsRenting(true);
     
     try {
+      // If user already has a pending rental, navigate to payment page
+      if (existingRental && existingRental.paymentStatus === 'pending') {
+        navigate(`/payment/${property._id}`);
+        return;
+      }
+      
       // Create rental data
       const rentalData = {
         propertyId: property._id,
@@ -124,10 +145,9 @@ const PropertyDetailPage = () => {
       if (typeof addRental === 'function') {
         const newRental = await addRental(rentalData);
         
-        if (newRental && newRental._id) {
+        if (newRental) {
           console.log('Rental created successfully, redirecting to payment page');
-          // Redirect to payment page
-          navigate(`/payment/${newRental._id}`);
+          navigate(`/payment/${property._id}`);
           return;
         }
       }
@@ -151,11 +171,12 @@ const PropertyDetailPage = () => {
       console.log('Rental created via direct API call:', newRental);
       
       // Redirect to payment page
-      navigate(`/payment/${newRental._id}`);
+      navigate(`/payment/${property._id}`);
       
     } catch (error) {
       console.error('Error creating rental:', error);
       toast.error(error.message || "Failed to process your request. Please try again.");
+    } finally {
       setIsRenting(false);
     }
   };
@@ -164,6 +185,9 @@ const PropertyDetailPage = () => {
   const ownerName = propertyOwner?.name || "Property Owner";
   const ownerPhone = propertyOwner?.phone || "+91 9876543210"; // Default phone if not available
   const availableFrom = property.availableFrom ? new Date(property.availableFrom) : new Date();
+  
+  // Determine if property is truly available (considering the user's own pending rental)
+  const canRent = available || (existingRental && existingRental.paymentStatus === 'pending');
   
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -322,30 +346,36 @@ const PropertyDetailPage = () => {
                 <div className="p-6">
                   <h2 className="text-lg font-semibold mb-4">Rent This Property</h2>
                   
-                  {available ? (
-                    isOwner ? (
-                      <div className="bg-blue-50 p-4 rounded-md mb-4">
-                        <p className="text-blue-600">
-                          This is your property. You cannot rent your own property.
-                        </p>
-                      </div>
-                    ) : (
-                      <>
-                        <p className="text-gray-600 mb-4">
-                          Interested in renting this property? Proceed to payment to secure it now.
-                        </p>
-                        <Button 
-                          className="w-full" 
-                          disabled={isRenting}
-                          onClick={handleRentProperty}
-                        >
-                          {isRenting ? "Processing..." : "Rent Now"}
-                        </Button>
-                        <p className="text-xs text-gray-500 mt-2 text-center">
-                          You'll pay ₹{(rent + deposit).toLocaleString()} (rent + deposit)
-                        </p>
-                      </>
-                    )
+                  {isOwner ? (
+                    <div className="bg-blue-50 p-4 rounded-md mb-4">
+                      <p className="text-blue-600">
+                        This is your property. You cannot rent your own property.
+                      </p>
+                    </div>
+                  ) : existingRental && existingRental.paymentStatus === 'paid' ? (
+                    <div className="bg-green-50 p-4 rounded-md mb-4">
+                      <p className="text-green-600">
+                        You have already rented this property.
+                      </p>
+                    </div>
+                  ) : canRent ? (
+                    <>
+                      <p className="text-gray-600 mb-4">
+                        {existingRental && existingRental.paymentStatus === 'pending' ? 
+                          'Complete your payment to secure this property.' : 
+                          'Interested in renting this property? Proceed to payment to secure it now.'}
+                      </p>
+                      <Button 
+                        className="w-full" 
+                        disabled={isRenting}
+                        onClick={handleRentProperty}
+                      >
+                        {isRenting ? "Processing..." : (existingRental && existingRental.paymentStatus === 'pending' ? "Complete Payment" : "Rent Now")}
+                      </Button>
+                      <p className="text-xs text-gray-500 mt-2 text-center">
+                        You'll pay ₹{(rent + deposit).toLocaleString()} (rent + deposit)
+                      </p>
+                    </>
                   ) : (
                     <>
                       <div className="bg-red-50 p-4 rounded-md mb-4">
