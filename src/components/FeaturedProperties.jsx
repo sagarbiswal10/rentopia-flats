@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ const FeaturedProperties = () => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
+        console.log('Fetching all properties for featured section...');
         const response = await fetch('http://localhost:5000/api/properties');
         
         if (!response.ok) {
@@ -22,7 +24,7 @@ const FeaturedProperties = () => {
         }
         
         const data = await response.json();
-        console.log('Properties fetched from API:', data);
+        console.log('Properties fetched from API:', data.length);
         
         // Only take available properties
         const availableProperties = data.filter(property => property.available === true);

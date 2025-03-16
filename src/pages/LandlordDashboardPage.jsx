@@ -21,7 +21,12 @@ const LandlordDashboardPage = () => {
     if (!loading && !token) {
       toast.error("You must be logged in to view your dashboard");
       navigate('/login');
-    } else if (token) {
+      return;
+    } 
+    
+    // Only proceed if we have a token
+    if (token) {
+      console.log('Token exists, fetching data for landlord dashboard');
       // Refresh user properties
       getUserProperties();
       
@@ -35,6 +40,7 @@ const LandlordDashboardPage = () => {
     
     setIsLoading(true);
     try {
+      console.log('Fetching property renters...');
       const response = await fetch('http://localhost:5000/api/rentals/property-owners', {
         headers: {
           Authorization: `Bearer ${token}`,

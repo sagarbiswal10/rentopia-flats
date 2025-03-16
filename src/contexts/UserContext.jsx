@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const UserContext = createContext(null);
@@ -11,13 +10,11 @@ export const UserProvider = ({ children }) => {
   const [userRentals, setUserRentals] = useState([]);
 
   useEffect(() => {
-    // Check if user is logged in by validating the token
     const checkAuth = async () => {
       const storedToken = localStorage.getItem('token');
       
       if (storedToken) {
         try {
-          // Validate token with the backend
           const response = await fetch('http://localhost:5000/api/users/me', {
             method: 'GET',
             headers: {
@@ -30,11 +27,9 @@ export const UserProvider = ({ children }) => {
             setUser(userData);
             setToken(storedToken);
             
-            // Fetch user properties and rentals
             getUserProperties(storedToken);
             getUserRentals(storedToken);
           } else {
-            // Token is invalid, remove from storage
             localStorage.removeItem('token');
           }
         } catch (error) {
@@ -54,14 +49,12 @@ export const UserProvider = ({ children }) => {
     setToken(authToken);
     localStorage.setItem('token', authToken);
     
-    // After login, fetch user properties and rentals
     getUserProperties(authToken);
     getUserRentals(authToken);
   };
 
   const logout = async () => {
     try {
-      // Call backend logout endpoint if needed
       if (token) {
         await fetch('http://localhost:5000/api/users/logout', {
           method: 'POST',
@@ -73,7 +66,6 @@ export const UserProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Regardless of API response, clear local state
       setUser(null);
       setToken(null);
       setUserProperties([]);
@@ -109,7 +101,6 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Add a property to the user's properties list
   const addProperty = async (propertyData) => {
     if (!user || !token) return null;
     
@@ -130,7 +121,6 @@ export const UserProvider = ({ children }) => {
       
       const newProperty = await response.json();
       
-      // Update local properties state
       setUserProperties(prev => [...prev, newProperty]);
       
       return newProperty;
@@ -139,8 +129,7 @@ export const UserProvider = ({ children }) => {
       throw error;
     }
   };
-  
-  // Add a rental to the user's rentals list
+
   const addRental = async (rentalData) => {
     if (!user || !token) return null;
     
@@ -161,17 +150,13 @@ export const UserProvider = ({ children }) => {
       
       const newRental = await response.json();
       
-      // Update local rentals state
       setUserRentals(prev => {
-        // Check if this rental already exists in the array
         const exists = prev.some(rental => rental._id === newRental._id);
         if (exists) {
-          // Replace the existing rental
           return prev.map(rental => 
             rental._id === newRental._id ? newRental : rental
           );
         } else {
-          // Add the new rental
           return [...prev, newRental];
         }
       });
@@ -182,12 +167,12 @@ export const UserProvider = ({ children }) => {
       throw error;
     }
   };
-  
-  // Get user's properties
+
   const getUserProperties = async (currentToken = token) => {
     if (!currentToken) return [];
     
     try {
+      console.log('Fetching user properties...');
       const response = await fetch('http://localhost:5000/api/properties/user', {
         method: 'GET',
         headers: {
@@ -200,8 +185,8 @@ export const UserProvider = ({ children }) => {
       }
       
       const properties = await response.json();
+      console.log('User properties fetched:', properties.length);
       
-      // Update local properties state
       setUserProperties(properties);
       
       return properties;
@@ -210,12 +195,12 @@ export const UserProvider = ({ children }) => {
       return [];
     }
   };
-  
-  // Get user's rentals
+
   const getUserRentals = async (currentToken = token) => {
     if (!currentToken) return [];
     
     try {
+      console.log('Fetching user rentals...');
       const response = await fetch('http://localhost:5000/api/rentals/user', {
         method: 'GET',
         headers: {
@@ -228,8 +213,8 @@ export const UserProvider = ({ children }) => {
       }
       
       const rentals = await response.json();
+      console.log('User rentals fetched:', rentals.length);
       
-      // Update local rentals state
       setUserRentals(rentals);
       
       return rentals;
@@ -239,7 +224,6 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Update payment status for rental
   const updateRentalPaymentStatus = async (rentalId, paymentStatus, paymentId) => {
     if (!token) return null;
     
@@ -259,14 +243,12 @@ export const UserProvider = ({ children }) => {
       
       const updatedRental = await response.json();
       
-      // Update local rentals state
       setUserRentals(prev => 
         prev.map(rental => 
           rental._id === rentalId ? updatedRental : rental
         )
       );
       
-      // After successful payment, refresh the properties list
       getUserProperties();
       
       return updatedRental;

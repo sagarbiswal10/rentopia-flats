@@ -205,6 +205,8 @@ const cancelRental = asyncHandler(async (req, res) => {
     property.available = true;
     await property.save();
     console.log(`Property ${property._id} availability set to true after rental cancellation`);
+  } else {
+    console.error(`Property ${rental.property} not found during rental cancellation`);
   }
 
   // Delete the rental record

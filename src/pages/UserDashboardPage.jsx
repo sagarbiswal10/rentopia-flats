@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -33,6 +34,7 @@ const UserDashboardPage = () => {
     
     setIsCancelling(true);
     try {
+      console.log(`Cancelling rental: ${rentalId}`);
       const response = await fetch(`http://localhost:5000/api/rentals/${rentalId}`, {
         method: 'DELETE',
         headers: {
@@ -44,6 +46,9 @@ const UserDashboardPage = () => {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to cancel rental');
       }
+      
+      const data = await response.json();
+      console.log('Rental cancelled successfully:', data);
       
       // Refresh rentals after cancellation
       await getUserRentals();

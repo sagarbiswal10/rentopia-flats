@@ -1,4 +1,3 @@
-
 const Property = require('../models/propertyModel');
 const asyncHandler = require('express-async-handler');
 
@@ -75,9 +74,11 @@ const getPropertyById = asyncHandler(async (req, res) => {
 // @route   GET /api/properties/user
 // @access  Private
 const getUserProperties = asyncHandler(async (req, res) => {
+  console.log(`Fetching properties for user: ${req.user._id}`);
   const properties = await Property.find({ user: req.user._id })
     .sort({ createdAt: -1 });
 
+  console.log(`Found ${properties.length} properties for user`);
   res.json(properties);
 });
 
