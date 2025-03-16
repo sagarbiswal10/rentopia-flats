@@ -55,6 +55,7 @@ const createPayment = asyncHandler(async (req, res) => {
     // Update property availability (only after successful payment)
     property.available = false;
     await property.save();
+    console.log(`Property ${propertyId} marked as unavailable after successful payment`);
   } else {
     res.status(404);
     throw new Error('No pending rental found for this property');

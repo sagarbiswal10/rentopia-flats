@@ -52,7 +52,7 @@ const LandlordDashboardPage = () => {
       }
     } catch (error) {
       console.error('Error fetching property renters:', error);
-      toast.error('Failed to load rental information');
+      toast.error('Failed to load rental information. Please try again later.');
     } finally {
       setIsLoading(false);
     }

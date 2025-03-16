@@ -51,6 +51,9 @@ const UserDashboardPage = () => {
       await getUserProperties();
       
       toast.success('Rental cancelled successfully');
+      
+      // Navigate to properties page to see all available properties
+      navigate('/properties');
     } catch (error) {
       console.error('Error cancelling rental:', error);
       toast.error(error.message || 'Failed to cancel rental');
@@ -221,7 +224,10 @@ const UserDashboardPage = () => {
                                   <Button 
                                     variant="outline" 
                                     size="sm"
-                                    onClick={() => navigate(`/property/${rental.property?._id || rental.property}`)}
+                                    onClick={() => {
+                                      const propId = typeof rental.property === 'object' ? rental.property._id : rental.property;
+                                      navigate(`/property/${propId}`);
+                                    }}
                                   >
                                     View Details
                                   </Button>
