@@ -162,6 +162,35 @@ const updateRentalStatus = asyncHandler(async (req, res) => {
   res.json(updatedRental);
 });
 
+// @desc    Cancel rental (only for pending payment rentals)
+// @route   DELETE /api/rentals/:id
+// @access  Private
+const cancelRental = asyncHandler(async (req, res) => {
+  const rental = await Rental.findById(req.params.id);
+
+  if (!rental) {
+    res.status(404);
+    throw new Error('Rental not found');
+  }
+
+  // Only the renter can cancel their rental
+  if (rental.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+    res.status(401);
+    throw new Error('Not authorized to cancel this rental');
+  }
+
+  // Can only cancel rentals with pending payment
+  if (rental.paymentStatus !== 'pending') {
+    res.status(400);
+    throw new Error('Cannot cancel a rental that has already been paid');
+  }
+
+  // Delete the rental record
+  await Rental.deleteOne({ _id: req.params.id });
+
+  res.json({ message: 'Rental cancelled successfully' });
+});
+
 module.exports = {
   createRental,
   getUserRentals,
@@ -169,4 +198,5 @@ module.exports = {
   getAllRentals,
   updateRentalStatus,
   getPropertyOwnersRentals,
+  cancelRental,
 };
