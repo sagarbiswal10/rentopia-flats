@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import Navbar from '@/components/Navbar';
@@ -8,24 +7,12 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Home, Building, MapPin, Trash2 } from 'lucide-react';
+import { Home, Building, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 const UserDashboardPage = () => {
-  const { 
-    user, 
-    loading, 
-    token, 
-    userProperties, 
-    userRentals, 
-    getUserProperties, 
-    getUserRentals, 
-    cancelRental,
-    logout 
-  } = useUser();
+  const { user, loading, token, userProperties, userRentals, getUserProperties, getUserRentals, logout } = useUser();
   const navigate = useNavigate();
-  const [isCancelling, setIsCancelling] = useState(false);
   
   useEffect(() => {
     if (!loading && !token) {
@@ -37,45 +24,6 @@ const UserDashboardPage = () => {
       getUserRentals();
     }
   }, [loading, token, navigate, getUserProperties, getUserRentals]);
-  
-  // Function to handle rental cancellation
-  const handleCancelRental = async (rentalId) => {
-    if (!token) return;
-    
-    setIsCancelling(true);
-    try {
-      // Use the cancelRental method from UserContext
-      await cancelRental(rentalId);
-      
-      // Navigate to properties page to see all available properties
-      // Refresh the properties page to see the updated list
-      setTimeout(() => {
-        navigate('/properties');
-      }, 1000);
-    } catch (error) {
-      console.error('Error cancelling rental from dashboard:', error);
-    } finally {
-      setIsCancelling(false);
-    }
-  };
-  
-  // Function to handle the pay rent button click
-  const handlePayRent = (rental) => {
-    // Ensure we have a valid property ID before navigating
-    if (rental && rental.property) {
-      // Check if property is an object or just an ID
-      const propertyId = typeof rental.property === 'object' ? rental.property._id : rental.property;
-      
-      if (propertyId) {
-        console.log(`Navigating to payment for property: ${propertyId}`);
-        navigate(`/payment/${propertyId}`, { state: { rentalId: rental._id } });
-      } else {
-        toast.error("Cannot process payment: Missing property ID");
-      }
-    } else {
-      toast.error("Cannot process payment: Missing property information");
-    }
-  };
   
   if (loading) {
     return (
@@ -92,6 +40,17 @@ const UserDashboardPage = () => {
   if (!user) {
     return null;
   }
+
+  // Function to handle the pay rent button click
+  const handlePayRent = (rental) => {
+    // We'll directly navigate to the payment page with the property ID
+    if (rental && rental.property && rental.property._id) {
+      console.log(`Navigating to payment for property: ${rental.property._id}`);
+      navigate(`/payment/${rental.property._id}`);
+    } else {
+      toast.error("Cannot process payment: Missing property information");
+    }
+  };
   
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -221,54 +180,17 @@ const UserDashboardPage = () => {
                                   <Button 
                                     variant="outline" 
                                     size="sm"
-                                    onClick={() => {
-                                      const propId = typeof rental.property === 'object' ? rental.property._id : rental.property;
-                                      navigate(`/property/${propId}`);
-                                    }}
+                                    onClick={() => navigate(`/property/${rental.property?._id}`)}
                                   >
                                     View Details
                                   </Button>
-                                  
-                                  {rental.paymentStatus === 'pending' && (
-                                    <>
-                                      <Button 
-                                        size="sm"
-                                        onClick={() => handlePayRent(rental)}
-                                      >
-                                        Pay Rent
-                                      </Button>
-                                      
-                                      <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                          <Button 
-                                            variant="destructive" 
-                                            size="sm"
-                                            disabled={isCancelling}
-                                          >
-                                            <Trash2 className="h-4 w-4 mr-1" />
-                                            Cancel
-                                          </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                          <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                              This will permanently cancel your rental request for this property.
-                                              The property will be available for others to rent.
-                                            </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction
-                                              onClick={() => handleCancelRental(rental._id)}
-                                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                            >
-                                              {isCancelling ? 'Cancelling...' : 'Yes, Cancel Rental'}
-                                            </AlertDialogAction>
-                                          </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                      </AlertDialog>
-                                    </>
+                                  {rental.paymentStatus !== 'paid' && (
+                                    <Button 
+                                      size="sm"
+                                      onClick={() => handlePayRent(rental)}
+                                    >
+                                      Pay Rent
+                                    </Button>
                                   )}
                                 </div>
                               </div>

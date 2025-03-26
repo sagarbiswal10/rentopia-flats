@@ -8,63 +8,19 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Home, Building, User, IndianRupee, MapPin, Phone, Mail, RefreshCw } from 'lucide-react';
+import { Home, Building, User, IndianRupee, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 const LandlordDashboardPage = () => {
   const { user, loading, token, userProperties, getUserProperties } = useUser();
   const [propertyRenters, setPropertyRenters] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
-  
-  const fetchPropertyRenters = async () => {
-    if (!token) return;
-    
-    setIsLoading(true);
-    try {
-      console.log('Fetching property renters...');
-      const response = await fetch('http://localhost:5000/api/rentals/property-owners', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Property renters data:', data);
-        setPropertyRenters(data);
-      } else {
-        const errorData = await response.json();
-        console.error('Error response:', errorData);
-        toast.error(errorData.message || 'Failed to load rental information');
-      }
-    } catch (error) {
-      console.error('Error fetching property renters:', error);
-      toast.error('Failed to load rental information. Please try again later.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await getUserProperties();
-    await fetchPropertyRenters();
-    toast.success('Dashboard refreshed');
-    setRefreshing(false);
-  };
   
   useEffect(() => {
     if (!loading && !token) {
       toast.error("You must be logged in to view your dashboard");
       navigate('/login');
-      return;
-    } 
-    
-    // Only proceed if we have a token
-    if (token) {
-      console.log('Token exists, fetching data for landlord dashboard');
+    } else if (token) {
       // Refresh user properties
       getUserProperties();
       
@@ -73,7 +29,27 @@ const LandlordDashboardPage = () => {
     }
   }, [loading, token, navigate, getUserProperties]);
   
-  if (loading || isLoading) {
+  const fetchPropertyRenters = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await fetch('http://localhost:5000/api/rentals/property-owners', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPropertyRenters(data);
+      }
+    } catch (error) {
+      console.error('Error fetching property renters:', error);
+      toast.error('Failed to load rental information');
+    }
+  };
+  
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Navbar />
@@ -95,18 +71,6 @@ const LandlordDashboardPage = () => {
       
       <main className="flex-grow py-8">
         <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Landlord Dashboard</h1>
-            <Button 
-              variant="outline" 
-              onClick={handleRefresh} 
-              disabled={refreshing}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
-          
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Sidebar - User Info */}
             <div className="lg:col-span-1">
@@ -255,32 +219,10 @@ const LandlordDashboardPage = () => {
                             <div className="p-4">
                               <div className="flex justify-between mb-2">
                                 <div>
-                                  <h4 className="font-semibold">
-                                    {rental.property ? rental.property.title : "Property"}
-                                  </h4>
-                                  <div className="mt-2 p-2 border rounded-md bg-gray-50">
-                                    <p className="text-sm font-medium">Renter Information:</p>
-                                    {rental.user ? (
-                                      <>
-                                        <div className="mt-1 flex items-center">
-                                          <User className="h-4 w-4 mr-2 text-gray-500" />
-                                          <span>{rental.user.name}</span>
-                                        </div>
-                                        <div className="mt-1 flex items-center">
-                                          <Mail className="h-4 w-4 mr-2 text-gray-500" />
-                                          <span>{rental.user.email}</span>
-                                        </div>
-                                        {rental.user.phone && (
-                                          <div className="mt-1 flex items-center">
-                                            <Phone className="h-4 w-4 mr-2 text-gray-500" />
-                                            <span>{rental.user.phone}</span>
-                                          </div>
-                                        )}
-                                      </>
-                                    ) : (
-                                      <p className="text-sm text-gray-500">User information not available</p>
-                                    )}
-                                  </div>
+                                  <h4 className="font-semibold">{rental.property.title}</h4>
+                                  <p className="text-sm text-gray-500">
+                                    Rented by: {rental.user.name} ({rental.user.email})
+                                  </p>
                                 </div>
                                 <Badge className={rental.paymentStatus === 'paid' ? 'bg-green-500' : 'bg-yellow-500'}>
                                   {rental.paymentStatus === 'paid' ? 'Paid' : 'Payment Pending'}
