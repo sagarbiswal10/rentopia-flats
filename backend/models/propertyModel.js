@@ -74,6 +74,23 @@ const propertySchema = mongoose.Schema(
       type: String,
       default: '',
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationStatus: {
+      type: String,
+      enum: ['pending', 'verified', 'rejected'],
+      default: 'pending',
+    },
+    verificationDocuments: {
+      type: [String],
+      default: [],
+    },
+    verificationNotes: {
+      type: String,
+      default: '',
+    },
   },
   {
     timestamps: true,

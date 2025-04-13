@@ -14,7 +14,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Home, MapPin, IndianRupee, Upload, Calendar } from 'lucide-react';
+import { Home, MapPin, IndianRupee, Upload, Calendar, FileCheck, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const propertySchema = z.object({
   title: z.string().min(10, { message: "Title must be at least 10 characters" }),
@@ -32,6 +33,9 @@ const propertySchema = z.object({
   amenities: z.array(z.string()).min(1, { message: "Please select at least one amenity" }),
   available: z.boolean(),
   availableFrom: z.string().min(1, { message: "Please select an availability date" }),
+  verificationAgreement: z.boolean().refine(val => val === true, { 
+    message: "You must agree to verify your property" 
+  }),
 });
 
 const ListPropertyPage = () => {
@@ -66,6 +70,7 @@ const ListPropertyPage = () => {
       amenities: [],
       available: true,
       availableFrom: new Date().toISOString().split('T')[0],
+      verificationAgreement: false,
     },
   });
 
@@ -98,6 +103,7 @@ const ListPropertyPage = () => {
         ...values,
         images: ["/placeholder.svg"], // Placeholder images array (would be replaced with actual images in production)
         thumbnailUrl: "/placeholder.svg", // Placeholder image
+        verificationDocuments: ["/placeholder.svg"], // Placeholder for verification documents
       };
       
       // Send data to backend API
@@ -117,7 +123,7 @@ const ListPropertyPage = () => {
       
       const newProperty = await response.json();
       
-      toast.success("Property listed successfully!");
+      toast.success("Property submitted for verification! Your listing will be reviewed by our team.");
       navigate(`/property/${newProperty._id}`);
     } catch (error) {
       console.error("Error creating property:", error);
@@ -146,6 +152,15 @@ const ListPropertyPage = () => {
                 <Home className="h-6 w-6 mr-2 text-primary" />
                 <h1 className="text-2xl font-bold">List Your Property</h1>
               </div>
+              
+              <Alert className="mb-6 bg-blue-50 border-blue-200">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Verification Required</AlertTitle>
+                <AlertDescription>
+                  All property listings must be verified before they appear publicly. Please be prepared to upload 
+                  ownership documents or rental agreement to verify your property.
+                </AlertDescription>
+              </Alert>
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -457,6 +472,54 @@ const ListPropertyPage = () => {
                     </div>
                   </div>
                   
+                  {/* Verification Documents */}
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-semibold">Property Verification</h2>
+                    
+                    <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+                      <FileCheck className="h-8 w-8 mx-auto text-gray-400" />
+                      <p className="mt-2 text-sm text-gray-600">
+                        Upload property ownership documents here (property deed, rental agreement, etc.)
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        (Upload feature is not implemented in this demo)
+                      </p>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="mt-4"
+                        onClick={() => toast.info("Document upload is not implemented in this demo")}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload verification documents
+                      </Button>
+                    </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name="verificationAgreement"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-md">
+                          <FormControl>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={field.value}
+                                onChange={field.onChange}
+                                id="verification-agreement"
+                              />
+                              <label htmlFor="verification-agreement" className="text-sm text-gray-700">
+                                I confirm that I have the legal right to list this property and agree to provide verification 
+                                documents if requested. I understand my listing will not be publicly visible until verified.
+                              </label>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
                   {/* Image Upload (placeholder) */}
                   <div className="space-y-4">
                     <h2 className="text-xl font-semibold">Property Images</h2>
@@ -473,7 +536,7 @@ const ListPropertyPage = () => {
                   </div>
                   
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? "Listing Property..." : "List Property"}
+                    {isSubmitting ? "Submitting for Verification..." : "Submit Property for Verification"}
                   </Button>
                 </form>
               </Form>

@@ -22,6 +22,7 @@ const createProperty = asyncHandler(async (req, res) => {
     amenities,
     images,
     thumbnailUrl,
+    verificationDocuments,
   } = req.body;
 
   // Create property
@@ -42,6 +43,8 @@ const createProperty = asyncHandler(async (req, res) => {
     amenities: amenities || [],
     images: images || [],
     thumbnailUrl: thumbnailUrl || '',
+    verificationStatus: 'pending',
+    verificationDocuments: verificationDocuments || [],
   });
 
   res.status(201).json(property);
@@ -51,8 +54,11 @@ const createProperty = asyncHandler(async (req, res) => {
 // @route   GET /api/properties
 // @access  Public
 const getProperties = asyncHandler(async (req, res) => {
-  const properties = await Property.find({ available: true })
-    .sort({ createdAt: -1 });
+  // Only return verified properties for public view
+  const properties = await Property.find({ 
+    available: true,
+    verificationStatus: 'verified'
+  }).sort({ createdAt: -1 });
 
   res.json(properties);
 });
@@ -98,6 +104,11 @@ const updateProperty = asyncHandler(async (req, res) => {
     throw new Error('User not authorized');
   }
 
+  // If verification documents are being updated, set status back to pending
+  if (req.body.verificationDocuments) {
+    req.body.verificationStatus = 'pending';
+  }
+
   // Update property
   const updatedProperty = await Property.findByIdAndUpdate(
     req.params.id,
@@ -129,6 +140,34 @@ const deleteProperty = asyncHandler(async (req, res) => {
   res.json({ message: 'Property removed' });
 });
 
+// @desc    Verify a property (admin only)
+// @route   PUT /api/properties/:id/verify
+// @access  Private/Admin
+const verifyProperty = asyncHandler(async (req, res) => {
+  const { status, notes } = req.body;
+  
+  const property = await Property.findById(req.params.id);
+
+  if (!property) {
+    res.status(404);
+    throw new Error('Property not found');
+  }
+
+  // Update verification status
+  property.verificationStatus = status;
+  property.verificationNotes = notes || '';
+  
+  // If verified, set isVerified flag
+  if (status === 'verified') {
+    property.isVerified = true;
+  } else {
+    property.isVerified = false;
+  }
+
+  const updatedProperty = await property.save();
+  res.json(updatedProperty);
+});
+
 module.exports = {
   createProperty,
   getProperties,
@@ -136,4 +175,5 @@ module.exports = {
   getUserProperties,
   updateProperty,
   deleteProperty,
+  verifyProperty,
 };
