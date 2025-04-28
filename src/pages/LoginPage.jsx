@@ -13,6 +13,7 @@ import { Mail, Lock, LogIn } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useUser } from '@/contexts/UserContext';
+import API_URL from '@/utils/apiConfig';
 
 // Validation schema
 const loginSchema = z.object({
@@ -46,7 +47,7 @@ const LoginPage = () => {
     
     try {
       // API call to backend for login
-      const response = await fetch('http://localhost:5000/api/users/login', {
+      const response = await fetch(`${API_URL}/api/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,6 +70,7 @@ const LoginPage = () => {
       navigate('/dashboard');
     } catch (error) {
       toast.error(error.message || "Login failed. Please try again.");
+      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }

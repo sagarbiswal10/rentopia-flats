@@ -91,6 +91,30 @@ const propertySchema = mongoose.Schema(
       type: String,
       default: '',
     },
+    // Enhanced fraud prevention fields
+    ownershipProof: {
+      type: String,
+      default: '',
+    },
+    propertyId: {
+      type: String, // Legal property identification number
+      default: '',
+    },
+    addressVerified: {
+      type: Boolean,
+      default: false,
+    },
+    lastPhysicalVerification: {
+      type: Date,
+    },
+    reportCount: {
+      type: Number,
+      default: 0,
+    },
+    fraudFlags: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,

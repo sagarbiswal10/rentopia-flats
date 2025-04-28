@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Search, MapPin, List, Grid3X3 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { toast } from 'sonner';
+import API_URL from '@/utils/apiConfig';
 
 const PropertiesPage = () => {
   const location = useLocation();
@@ -28,14 +29,22 @@ const PropertiesPage = () => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/properties');
+        console.log('Fetching properties from:', `${API_URL}/api/properties`);
+        const response = await fetch(`${API_URL}/api/properties`);
         if (!response.ok) {
           throw new Error('Failed to fetch properties');
         }
         const data = await response.json();
         console.log('Properties loaded:', data.length);
-        setProperties(data);
-        setFilteredProperties(data);
+        
+        // Filter to only show verified properties
+        const verifiedProperties = data.filter(
+          property => property.verificationStatus === 'verified'
+        );
+        console.log('Verified properties:', verifiedProperties.length);
+        
+        setProperties(verifiedProperties);
+        setFilteredProperties(verifiedProperties);
       } catch (error) {
         console.error('Error fetching properties:', error);
         toast.error('Failed to load properties. Please try again.');

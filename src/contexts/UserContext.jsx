@@ -1,5 +1,6 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import API_URL from '../utils/apiConfig';
 
 const UserContext = createContext(null);
 
@@ -18,7 +19,7 @@ export const UserProvider = ({ children }) => {
       if (storedToken) {
         try {
           // Validate token with the backend
-          const response = await fetch('http://localhost:5000/api/users/me', {
+          const response = await fetch(`${API_URL}/api/users/me`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${storedToken}`,
@@ -63,7 +64,7 @@ export const UserProvider = ({ children }) => {
     try {
       // Call backend logout endpoint if needed
       if (token) {
-        await fetch('http://localhost:5000/api/users/logout', {
+        await fetch(`${API_URL}/api/users/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -84,7 +85,7 @@ export const UserProvider = ({ children }) => {
 
   const updateUser = async (newUserData) => {
     try {
-      const response = await fetch('http://localhost:5000/api/users/update', {
+      const response = await fetch(`${API_URL}/api/users/update`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +115,7 @@ export const UserProvider = ({ children }) => {
     if (!user || !token) return null;
     
     try {
-      const response = await fetch('http://localhost:5000/api/properties', {
+      const response = await fetch(`${API_URL}/api/properties`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,7 +146,7 @@ export const UserProvider = ({ children }) => {
     if (!user || !token) return null;
     
     try {
-      const response = await fetch('http://localhost:5000/api/rentals', {
+      const response = await fetch(`${API_URL}/api/rentals`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -188,7 +189,7 @@ export const UserProvider = ({ children }) => {
     if (!currentToken) return [];
     
     try {
-      const response = await fetch('http://localhost:5000/api/properties/user', {
+      const response = await fetch(`${API_URL}/api/properties/user`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${currentToken}`,
@@ -216,7 +217,7 @@ export const UserProvider = ({ children }) => {
     if (!currentToken) return [];
     
     try {
-      const response = await fetch('http://localhost:5000/api/rentals/user', {
+      const response = await fetch(`${API_URL}/api/rentals/user`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${currentToken}`,
@@ -244,7 +245,7 @@ export const UserProvider = ({ children }) => {
     if (!token) return null;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/rentals/${rentalId}`, {
+      const response = await fetch(`${API_URL}/api/rentals/${rentalId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

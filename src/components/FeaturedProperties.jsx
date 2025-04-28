@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { ChevronRight } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import API_URL from '@/utils/apiConfig';
 
 const FeaturedProperties = () => {
   const [properties, setProperties] = useState([]);
@@ -15,7 +17,8 @@ const FeaturedProperties = () => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/properties');
+        console.log('Fetching properties from:', `${API_URL}/api/properties`);
+        const response = await fetch(`${API_URL}/api/properties`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
@@ -24,16 +27,18 @@ const FeaturedProperties = () => {
         const data = await response.json();
         console.log('Properties fetched from API:', data);
         
-        // Only take available properties
-        const availableProperties = data.filter(property => property.available === true);
-        console.log('Available properties:', availableProperties.length);
+        // Only take available and verified properties
+        const availableVerifiedProperties = data.filter(
+          property => property.available === true && property.verificationStatus === 'verified'
+        );
+        console.log('Available and verified properties:', availableVerifiedProperties.length);
         
-        setProperties(availableProperties);
+        setProperties(availableVerifiedProperties);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching properties:', error);
         toast("Error fetching properties", {
-          description: "Could not load properties from server.",
+          description: "Could not load properties from server. Please check your connection.",
         });
         // Fall back to empty array if fetch fails
         setProperties([]);

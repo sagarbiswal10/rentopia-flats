@@ -9,6 +9,7 @@ const {
   updateProperty,
   deleteProperty,
   verifyProperty,
+  reportProperty,
 } = require('../controllers/propertyController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
@@ -20,5 +21,6 @@ router
   .put(protect, updateProperty)
   .delete(protect, deleteProperty);
 router.route('/:id/verify').put(protect, admin, verifyProperty);
+router.route('/:id/report').post(protect, reportProperty);
 
 module.exports = router;

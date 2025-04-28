@@ -13,6 +13,7 @@ import { Mail, Lock, User, UserPlus } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useUser } from '@/contexts/UserContext';
+import API_URL from '@/utils/apiConfig';
 
 // Validation schema
 const registerSchema = z.object({
@@ -53,7 +54,7 @@ const RegisterPage = () => {
     
     try {
       // API call to backend for registration
-      const response = await fetch('http://localhost:5000/api/users/register', {
+      const response = await fetch(`${API_URL}/api/users/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,6 +78,7 @@ const RegisterPage = () => {
       navigate('/dashboard');
     } catch (error) {
       toast.error(error.message || "Registration failed. Please try again.");
+      console.error("Registration error:", error);
     } finally {
       setIsLoading(false);
     }
