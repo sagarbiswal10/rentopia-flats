@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,7 @@ import { Mail, Lock, User, UserPlus } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useUser } from '@/contexts/UserContext';
-import API_URL from '@/utils/apiConfig';
+import API_URL, { fetchWithErrorHandling } from '@/utils/apiConfig';
 
 // Validation schema
 const registerSchema = z.object({
@@ -53,8 +52,8 @@ const RegisterPage = () => {
     setIsLoading(true);
     
     try {
-      // API call to backend for registration
-      const response = await fetch(`${API_URL}/api/users/register`, {
+      // API call to backend for registration with improved error handling
+      const data = await fetchWithErrorHandling('/api/users/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -66,18 +65,14 @@ const RegisterPage = () => {
         }),
       });
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-      
       // Registration successful
       login(data.user, data.token);
       toast.success("Registration successful!");
       navigate('/dashboard');
     } catch (error) {
-      toast.error(error.message || "Registration failed. Please try again.");
+      toast.error("Registration failed", { 
+        description: error.message || "Please try again with different credentials." 
+      });
       console.error("Registration error:", error);
     } finally {
       setIsLoading(false);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,7 @@ import { Mail, Lock, LogIn } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useUser } from '@/contexts/UserContext';
-import API_URL from '@/utils/apiConfig';
+import API_URL, { fetchWithErrorHandling } from '@/utils/apiConfig';
 
 // Validation schema
 const loginSchema = z.object({
@@ -46,8 +45,8 @@ const LoginPage = () => {
     setIsLoading(true);
     
     try {
-      // API call to backend for login
-      const response = await fetch(`${API_URL}/api/users/login`, {
+      // API call to backend for login with improved error handling
+      const data = await fetchWithErrorHandling('/api/users/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,18 +57,14 @@ const LoginPage = () => {
         }),
       });
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-      
       // Login successful
       login(data.user, data.token);
       toast.success("Login successful!");
       navigate('/dashboard');
     } catch (error) {
-      toast.error(error.message || "Login failed. Please try again.");
+      toast.error("Login failed", { 
+        description: error.message || "Please check your credentials and try again." 
+      });
       console.error("Login error:", error);
     } finally {
       setIsLoading(false);

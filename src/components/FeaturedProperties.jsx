@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { ChevronRight } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import API_URL from '@/utils/apiConfig';
+import API_URL, { fetchWithErrorHandling } from '@/utils/apiConfig';
 
 const FeaturedProperties = () => {
   const [properties, setProperties] = useState([]);
@@ -18,13 +17,9 @@ const FeaturedProperties = () => {
     const fetchProperties = async () => {
       try {
         console.log('Fetching properties from:', `${API_URL}/api/properties`);
-        const response = await fetch(`${API_URL}/api/properties`);
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        // Using the new helper function
+        const data = await fetchWithErrorHandling('/api/properties');
         console.log('Properties fetched from API:', data);
         
         // Only take available and verified properties
@@ -34,14 +29,14 @@ const FeaturedProperties = () => {
         console.log('Available and verified properties:', availableVerifiedProperties.length);
         
         setProperties(availableVerifiedProperties);
-        setLoading(false);
       } catch (error) {
         console.error('Error fetching properties:', error);
-        toast("Error fetching properties", {
-          description: "Could not load properties from server. Please check your connection.",
+        toast.error("Couldn't load properties", {
+          description: "Please check if the backend server is running.",
         });
         // Fall back to empty array if fetch fails
         setProperties([]);
+      } finally {
         setLoading(false);
       }
     };

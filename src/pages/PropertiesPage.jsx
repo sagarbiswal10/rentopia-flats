@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -10,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Search, MapPin, List, Grid3X3 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { toast } from 'sonner';
-import API_URL from '@/utils/apiConfig';
+import API_URL, { fetchWithErrorHandling } from '@/utils/apiConfig';
 
 const PropertiesPage = () => {
   const location = useLocation();
@@ -30,11 +29,9 @@ const PropertiesPage = () => {
     const fetchProperties = async () => {
       try {
         console.log('Fetching properties from:', `${API_URL}/api/properties`);
-        const response = await fetch(`${API_URL}/api/properties`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch properties');
-        }
-        const data = await response.json();
+        
+        // Using the new helper function
+        const data = await fetchWithErrorHandling('/api/properties');
         console.log('Properties loaded:', data.length);
         
         // Filter to only show verified properties
