@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { UserProvider } from './contexts/UserContext';
 import HomePage from './pages/HomePage';
@@ -18,7 +19,7 @@ import './App.css';
 
 function App() {
   return (
-    <>
+    <React.Fragment>
       <UserProvider>
         <Router>
           <Routes>
@@ -38,7 +39,7 @@ function App() {
         </Router>
       </UserProvider>
       <Toaster />
-    </>
+    </React.Fragment>
   );
 }
 
