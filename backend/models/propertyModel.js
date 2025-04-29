@@ -74,6 +74,54 @@ const propertySchema = mongoose.Schema(
       type: String,
       default: '',
     },
+    // Added fraud prevention fields
+    verificationStatus: {
+      type: String,
+      enum: ['pending', 'verified', 'rejected'],
+      default: 'pending',
+    },
+    verificationDate: {
+      type: Date,
+    },
+    verificationNotes: {
+      type: String,
+    },
+    reportCount: {
+      type: Number,
+      default: 0,
+    },
+    reports: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        reason: {
+          type: String,
+          required: true,
+        },
+        details: {
+          type: String,
+        },
+        date: {
+          type: Date,
+          default: Date.now,
+        },
+        status: {
+          type: String,
+          enum: ['pending', 'reviewed', 'dismissed'],
+          default: 'pending',
+        },
+      },
+    ],
+    addressVerified: {
+      type: Boolean,
+      default: false,
+    },
+    suspiciousFlags: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

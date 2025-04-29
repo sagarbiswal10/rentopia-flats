@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import Navbar from '@/components/Navbar';
@@ -14,7 +15,17 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Home, MapPin, IndianRupee, Upload, Calendar } from 'lucide-react';
+import { Home, MapPin, IndianRupee, Upload, Calendar, Shield, Lock, Flag } from 'lucide-react';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 const propertySchema = z.object({
   title: z.string().min(10, { message: "Title must be at least 10 characters" }),
@@ -28,10 +39,15 @@ const propertySchema = z.object({
   locality: z.string().min(3, { message: "Locality must be at least 3 characters" }),
   city: z.string().min(2, { message: "City must be at least 2 characters" }),
   state: z.string().min(2, { message: "State must be at least 2 characters" }),
-  description: z.string().min(30, { message: "Description must be at least 30 characters" }),
+  description: z.string().min(50, { message: "Description must be at least 50 characters" }),
   amenities: z.array(z.string()).min(1, { message: "Please select at least one amenity" }),
   available: z.boolean(),
   availableFrom: z.string().min(1, { message: "Please select an availability date" }),
+  addressProof: z.any().optional(),
+  ownershipProof: z.any().optional(),
+  termsAccepted: z.boolean().refine(val => val === true, {
+    message: "You must accept the terms and conditions"
+  }),
 });
 
 const ListPropertyPage = () => {
@@ -39,14 +55,65 @@ const ListPropertyPage = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [amenities, setAmenities] = useState([]);
+  const [userVerification, setUserVerification] = useState({
+    emailVerified: false,
+    phoneVerified: false,
+    identityVerified: false,
+    trustScore: 0,
+    listingLimit: 3,
+    listingsCount: 0,
+  });
+  const [openVerificationDialog, setOpenVerificationDialog] = useState(false);
   
   // Redirect if not logged in
   React.useEffect(() => {
     if (!user) {
       toast.error("You must be logged in to list a property");
       navigate('/login');
+    } else {
+      // Get user verification details
+      fetchUserVerification();
     }
   }, [user, navigate]);
+
+  const fetchUserVerification = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/users/me', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        setUserVerification({
+          emailVerified: userData.emailVerified || false,
+          phoneVerified: userData.phoneVerified || false,
+          identityVerified: userData.verificationDetails?.identityVerified || false,
+          trustScore: userData.verificationDetails?.trustScore || 0,
+          listingLimit: userData.verificationDetails?.listingLimit || 3,
+          listingsCount: 0, // Will be updated later
+        });
+        
+        // Fetch user's current listings count
+        const propertiesResponse = await fetch('http://localhost:5000/api/properties/user', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (propertiesResponse.ok) {
+          const properties = await propertiesResponse.json();
+          setUserVerification(prev => ({
+            ...prev,
+            listingsCount: properties.length
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user verification:", error);
+    }
+  };
 
   const form = useForm({
     resolver: zodResolver(propertySchema),
@@ -66,6 +133,9 @@ const ListPropertyPage = () => {
       amenities: [],
       available: true,
       availableFrom: new Date().toISOString().split('T')[0],
+      addressProof: null,
+      ownershipProof: null,
+      termsAccepted: false,
     },
   });
 
@@ -83,10 +153,94 @@ const ListPropertyPage = () => {
     });
   };
 
+  const requestPhoneVerification = async () => {
+    try {
+      const phone = prompt("Enter your phone number for verification:");
+      
+      if (!phone) return;
+      
+      const response = await fetch('http://localhost:5000/api/users/verify-phone-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ phone })
+      });
+      
+      if (response.ok) {
+        const verificationCode = prompt("Enter the verification code sent to your phone:");
+        
+        if (verificationCode) {
+          const verifyResponse = await fetch('http://localhost:5000/api/users/verify-phone', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ code: verificationCode })
+          });
+          
+          if (verifyResponse.ok) {
+            toast.success("Phone number verified successfully!");
+            fetchUserVerification();
+          } else {
+            const error = await verifyResponse.json();
+            toast.error(error.message || "Phone verification failed");
+          }
+        }
+      } else {
+        const error = await response.json();
+        toast.error(error.message || "Failed to send verification code");
+      }
+    } catch (error) {
+      console.error("Error in phone verification:", error);
+      toast.error("An error occurred during phone verification");
+    }
+  };
+
+  const submitIdentityVerification = async (data) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/users/verify-identity', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (response.ok) {
+        toast.success("Identity verification submitted successfully!");
+        setOpenVerificationDialog(false);
+        fetchUserVerification();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || "Identity verification submission failed");
+      }
+    } catch (error) {
+      console.error("Error in identity verification:", error);
+      toast.error("An error occurred during identity verification");
+    }
+  };
+
   const onSubmit = async (values) => {
     if (!user) {
       toast.error("You must be logged in to list a property");
       navigate('/login');
+      return;
+    }
+    
+    // Check if user has reached their listing limit
+    if (userVerification.listingsCount >= userVerification.listingLimit) {
+      toast.error(`You have reached your listing limit of ${userVerification.listingLimit}. Please verify your account to increase your limit.`);
+      setOpenVerificationDialog(true);
+      return;
+    }
+    
+    // Check if important verifications are done
+    if (!userVerification.emailVerified) {
+      toast.error("Please verify your email before listing a property");
       return;
     }
     
@@ -134,6 +288,88 @@ const ListPropertyPage = () => {
     "WiFi", "Air Conditioning", "Water Purifier", "Washing Machine", "Refrigerator"
   ];
 
+  const renderVerificationStatus = () => {
+    const totalVerifications = 3;
+    const completedVerifications = [
+      userVerification.emailVerified,
+      userVerification.phoneVerified,
+      userVerification.identityVerified
+    ].filter(Boolean).length;
+    
+    const percentage = (completedVerifications / totalVerifications) * 100;
+    
+    return (
+      <Card className="p-4 mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-medium flex items-center">
+            <Shield className="h-5 w-5 mr-2 text-primary" />
+            Account Verification Status
+          </h3>
+          <Badge variant={percentage === 100 ? "success" : "secondary"}>
+            {percentage === 100 ? "Fully Verified" : "Verification Needed"}
+          </Badge>
+        </div>
+        
+        <Progress value={percentage} className="h-2 mb-4" />
+        
+        <div className="space-y-3 mt-4">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center">
+              <Badge variant={userVerification.emailVerified ? "success" : "outline"} className="mr-2">
+                {userVerification.emailVerified ? "Verified" : "Unverified"}
+              </Badge>
+              Email Verification
+            </span>
+            {!userVerification.emailVerified && (
+              <Button variant="outline" size="sm" onClick={() => alert("Check your email for verification link")}>
+                Verify Email
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="flex items-center">
+              <Badge variant={userVerification.phoneVerified ? "success" : "outline"} className="mr-2">
+                {userVerification.phoneVerified ? "Verified" : "Unverified"}
+              </Badge>
+              Phone Verification
+            </span>
+            {!userVerification.phoneVerified && (
+              <Button variant="outline" size="sm" onClick={requestPhoneVerification}>
+                Verify Phone
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="flex items-center">
+              <Badge variant={userVerification.identityVerified ? "success" : "outline"} className="mr-2">
+                {userVerification.identityVerified ? "Verified" : "Unverified"}
+              </Badge>
+              Identity Verification
+            </span>
+            {!userVerification.identityVerified && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setOpenVerificationDialog(true)}
+              >
+                Verify Identity
+              </Button>
+            )}
+          </div>
+        </div>
+        
+        <div className="mt-4 text-sm text-muted-foreground">
+          <p>Verification increases your trust score and listing limits.</p>
+          <p className="mt-1">
+            Current listing limit: <span className="font-medium">{userVerification.listingsCount} / {userVerification.listingLimit}</span>
+          </p>
+        </div>
+      </Card>
+    );
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -146,6 +382,8 @@ const ListPropertyPage = () => {
                 <Home className="h-6 w-6 mr-2 text-primary" />
                 <h1 className="text-2xl font-bold">List Your Property</h1>
               </div>
+              
+              {renderVerificationStatus()}
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -353,6 +591,66 @@ const ListPropertyPage = () => {
                         )}
                       />
                     </div>
+
+                    {/* Property Ownership Verification */}
+                    <div className="space-y-3 bg-gray-50 p-4 rounded-md border border-gray-200 mt-2">
+                      <h3 className="text-md font-medium flex items-center">
+                        <Lock className="h-4 w-4 mr-2 text-primary" />
+                        Property Verification
+                      </h3>
+                      
+                      <FormField
+                        control={form.control}
+                        name="addressProof"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Address Proof</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="file" 
+                                accept=".pdf,.jpg,.jpeg,.png" 
+                                onChange={(e) => {
+                                  // In a real app, this would upload the file
+                                  field.onChange(e.target.files ? e.target.files[0] : null);
+                                }} 
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Upload utility bill or other proof of address
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="ownershipProof"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Ownership Proof</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="file" 
+                                accept=".pdf,.jpg,.jpeg,.png" 
+                                onChange={(e) => {
+                                  // In a real app, this would upload the file
+                                  field.onChange(e.target.files ? e.target.files[0] : null);
+                                }} 
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Upload property deed, tax receipt, or rental agreement
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Properties with verified ownership documents get preferential listing and higher trust scores.
+                      </p>
+                    </div>
                   </div>
                   
                   {/* Description */}
@@ -372,6 +670,9 @@ const ListPropertyPage = () => {
                               {...field} 
                             />
                           </FormControl>
+                          <FormDescription>
+                            Provide a detailed and accurate description of at least 50 characters.
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -470,9 +771,37 @@ const ListPropertyPage = () => {
                         (Upload feature is not implemented in this demo)
                       </p>
                     </div>
+                    <FormDescription>
+                      Using real property photos increases trust. Avoid stock images or misrepresentations.
+                    </FormDescription>
                   </div>
+
+                  {/* Terms and Conditions */}
+                  <FormField
+                    control={form.control}
+                    name="termsAccepted"
+                    render={({ field }) => (
+                      <FormItem className="flex items-start space-x-3 space-y-0 pt-4">
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={field.onChange}
+                            className="mt-1"
+                          />
+                        </FormControl>
+                        <div>
+                          <FormLabel>Terms and Conditions</FormLabel>
+                          <FormDescription>
+                            I confirm that I am authorized to list this property and that all information provided is accurate and truthful. I understand that providing false information may result in account suspension.
+                          </FormDescription>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
                   
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  <Button type="submit" className="w-full" disabled={isSubmitting || userVerification.listingsCount >= userVerification.listingLimit}>
                     {isSubmitting ? "Listing Property..." : "List Property"}
                   </Button>
                 </form>
@@ -481,6 +810,58 @@ const ListPropertyPage = () => {
           </Card>
         </div>
       </main>
+
+      {/* Identity Verification Dialog */}
+      <Dialog open={openVerificationDialog} onOpenChange={setOpenVerificationDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Verify Your Identity</DialogTitle>
+            <DialogDescription>
+              Identity verification increases your trust score and listing limits.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">ID Type</label>
+              <Select defaultValue="passport">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select ID type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="passport">Passport</SelectItem>
+                  <SelectItem value="drivers_license">Driver's License</SelectItem>
+                  <SelectItem value="national_id">National ID Card</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">ID Number</label>
+              <Input placeholder="Enter ID number" />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">Upload ID Document</label>
+              <Input type="file" accept=".pdf,.jpg,.jpeg,.png" />
+              <p className="text-xs text-gray-500 mt-1">Upload a clear image of your ID document</p>
+            </div>
+          </div>
+          
+          <div className="flex justify-end space-x-3">
+            <Button variant="outline" onClick={() => setOpenVerificationDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => submitIdentityVerification({
+              idType: "passport", // In a real app, get from form
+              idNumber: "ABC123456", // In a real app, get from form
+              idImage: "placeholder" // In a real app, upload the file
+            })}>
+              Submit Verification
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <Footer />
     </div>

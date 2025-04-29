@@ -30,9 +30,36 @@ const userSchema = mongoose.Schema(
       type: String,
       default: '',
     },
+    phoneVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationCode: {
+      type: String,
+    },
+    verificationCodeExpiry: {
+      type: Date,
+    },
     profilePicture: {
       type: String,
       default: '',
+    },
+    role: {
+      type: String,
+      enum: ['tenant', 'landlord', 'admin'],
+      default: 'tenant',
+    },
+    banned: {
+      type: Boolean,
+      default: false,
+    },
+    suspiciousLoginAttempts: {
+      type: Number,
+      default: 0,
     },
   },
   {
