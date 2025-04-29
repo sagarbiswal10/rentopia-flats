@@ -52,12 +52,9 @@ const createPayment = asyncHandler(async (req, res) => {
     userRental.paymentId = payment._id;
     await userRental.save();
 
-    // Update property availability (only after successful payment)
+    // Update property availability
     property.available = false;
     await property.save();
-  } else {
-    res.status(404);
-    throw new Error('No pending rental found for this property');
   }
 
   res.status(201).json(payment);
