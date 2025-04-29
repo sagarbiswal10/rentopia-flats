@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -9,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Search, MapPin, List, Grid3X3 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { toast } from 'sonner';
-import API_URL, { fetchWithErrorHandling } from '@/utils/apiConfig';
 
 const PropertiesPage = () => {
   const location = useLocation();
@@ -28,20 +28,14 @@ const PropertiesPage = () => {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        console.log('Fetching properties from:', `${API_URL}/api/properties`);
-        
-        // Using the new helper function
-        const data = await fetchWithErrorHandling('/api/properties');
+        const response = await fetch('http://localhost:5000/api/properties');
+        if (!response.ok) {
+          throw new Error('Failed to fetch properties');
+        }
+        const data = await response.json();
         console.log('Properties loaded:', data.length);
-        
-        // Filter to only show verified properties
-        const verifiedProperties = data.filter(
-          property => property.verificationStatus === 'verified'
-        );
-        console.log('Verified properties:', verifiedProperties.length);
-        
-        setProperties(verifiedProperties);
-        setFilteredProperties(verifiedProperties);
+        setProperties(data);
+        setFilteredProperties(data);
       } catch (error) {
         console.error('Error fetching properties:', error);
         toast.error('Failed to load properties. Please try again.');

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -62,10 +61,17 @@ const UserDashboardPage = () => {
   
   // Function to handle the pay rent button click
   const handlePayRent = (rental) => {
-    // Navigate to the payment page with the property ID
-    if (rental && rental.property && rental.property._id) {
-      console.log(`Navigating to payment for property: ${rental.property._id}`);
-      navigate(`/payment/${rental.property._id}`);
+    // Ensure we have a valid property ID before navigating
+    if (rental && rental.property) {
+      // Check if property is an object or just an ID
+      const propertyId = typeof rental.property === 'object' ? rental.property._id : rental.property;
+      
+      if (propertyId) {
+        console.log(`Navigating to payment for property: ${propertyId}`);
+        navigate(`/payment/${propertyId}`);
+      } else {
+        toast.error("Cannot process payment: Missing property ID");
+      }
     } else {
       toast.error("Cannot process payment: Missing property information");
     }
@@ -215,7 +221,7 @@ const UserDashboardPage = () => {
                                   <Button 
                                     variant="outline" 
                                     size="sm"
-                                    onClick={() => navigate(`/property/${rental.property?._id}`)}
+                                    onClick={() => navigate(`/property/${rental.property?._id || rental.property}`)}
                                   >
                                     View Details
                                   </Button>

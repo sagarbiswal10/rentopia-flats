@@ -74,47 +74,6 @@ const propertySchema = mongoose.Schema(
       type: String,
       default: '',
     },
-    isVerified: {
-      type: Boolean,
-      default: false,
-    },
-    verificationStatus: {
-      type: String,
-      enum: ['pending', 'verified', 'rejected'],
-      default: 'pending',
-    },
-    verificationDocuments: {
-      type: [String],
-      default: [],
-    },
-    verificationNotes: {
-      type: String,
-      default: '',
-    },
-    // Enhanced fraud prevention fields
-    ownershipProof: {
-      type: String,
-      default: '',
-    },
-    propertyId: {
-      type: String, // Legal property identification number
-      default: '',
-    },
-    addressVerified: {
-      type: Boolean,
-      default: false,
-    },
-    lastPhysicalVerification: {
-      type: Date,
-    },
-    reportCount: {
-      type: Number,
-      default: 0,
-    },
-    fraudFlags: {
-      type: [String],
-      default: [],
-    },
   },
   {
     timestamps: true,
