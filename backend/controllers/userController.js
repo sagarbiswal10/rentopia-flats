@@ -1,3 +1,4 @@
+
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const UserVerification = require('../models/userVerificationModel');
@@ -133,11 +134,15 @@ const requestPhoneVerification = asyncHandler(async (req, res) => {
     throw new Error('Please provide a phone number');
   }
 
-  // Basic validation for Indian phone numbers
-  const phoneRegex = /^(\+?91|0)?[6-9]\d{9}$/;
-  if (!phoneRegex.test(phone)) {
+  // Clean up the phone number - remove spaces, dashes, etc.
+  const cleanedPhone = phone.replace(/\s+/g, '').replace(/-/g, '').trim();
+  
+  // Validate Indian phone number format (allowing multiple formats)
+  // Accepts: 10 digits, or with 91 prefix, or with +91 prefix, or with 0 prefix
+  const phoneRegex = /^(?:\+?91|0)?[6-9]\d{9}$/;
+  if (!phoneRegex.test(cleanedPhone)) {
     res.status(400);
-    throw new Error('Please provide a valid Indian phone number');
+    throw new Error('Please provide a valid Indian phone number (10 digits)');
   }
 
   const user = await User.findById(req.user._id);
@@ -152,13 +157,13 @@ const requestPhoneVerification = asyncHandler(async (req, res) => {
   const codeExpiry = new Date();
   codeExpiry.setHours(codeExpiry.getHours() + 1); // Code valid for 1 hour
 
-  user.phone = phone;
+  user.phone = cleanedPhone;
   user.verificationCode = verificationCode;
   user.verificationCodeExpiry = codeExpiry;
   await user.save();
 
   // Send SMS verification
-  const smsSent = await sendVerificationSMS(phone, verificationCode);
+  const smsSent = await sendVerificationSMS(cleanedPhone, verificationCode);
 
   if (smsSent) {
     res.json({

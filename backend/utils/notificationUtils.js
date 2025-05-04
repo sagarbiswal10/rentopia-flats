@@ -73,16 +73,16 @@ const sendVerificationSMS = async (phoneNumber, verificationCode) => {
     }
 
     // Format phone number for Twilio (ensure it has the country code)
-    let formattedNumber = phoneNumber;
+    let formattedNumber = phoneNumber.trim();
     
     // For Indian numbers, ensure +91 prefix
-    if (phoneNumber.startsWith('0')) {
-      formattedNumber = '+91' + phoneNumber.slice(1);
-    } else if (phoneNumber.startsWith('91')) {
-      formattedNumber = '+' + phoneNumber;
-    } else if (!phoneNumber.startsWith('+')) {
+    if (formattedNumber.startsWith('0')) {
+      formattedNumber = '+91' + formattedNumber.slice(1);
+    } else if (formattedNumber.startsWith('91')) {
+      formattedNumber = '+' + formattedNumber;
+    } else if (!formattedNumber.startsWith('+')) {
       // If no country code, assume Indian number
-      formattedNumber = '+91' + phoneNumber;
+      formattedNumber = '+91' + formattedNumber;
     }
     
     console.log(`Sending SMS to formatted number: ${formattedNumber}`);
