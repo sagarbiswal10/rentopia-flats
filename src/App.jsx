@@ -12,6 +12,7 @@ import PropertiesPage from "./pages/PropertiesPage";
 import PropertyDetailPage from "./pages/PropertyDetailPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 import ListPropertyPage from "./pages/ListPropertyPage";
 import UserDashboardPage from "./pages/UserDashboardPage";
 import LandlordDashboardPage from "./pages/LandlordDashboardPage";
@@ -36,6 +37,7 @@ const App = () => {
               <Route path="/property/:id" element={<PropertyDetailPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/post-property" element={<ListPropertyPage />} />
               <Route path="/dashboard" element={<UserDashboardPage />} />
               <Route path="/landlord" element={<LandlordDashboardPage />} />

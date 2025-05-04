@@ -4,6 +4,7 @@ const User = require('../models/userModel');
 const UserVerification = require('../models/userVerificationModel');
 const asyncHandler = require('express-async-handler');
 const crypto = require('crypto');
+const { sendVerificationEmail, sendVerificationSMS } = require('../utils/notificationUtils');
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -57,8 +58,8 @@ const registerUser = asyncHandler(async (req, res) => {
       user: user._id,
     });
 
-    // In a real application, we would send an email with the verification code
-    console.log(`Verification code for ${email}: ${verificationCode}`);
+    // Send verification email
+    await sendVerificationEmail(email, name, verificationCode);
 
     res.status(201).json({
       user: {
@@ -150,8 +151,8 @@ const requestPhoneVerification = asyncHandler(async (req, res) => {
   user.verificationCodeExpiry = codeExpiry;
   await user.save();
 
-  // In a real application, we would send an SMS with the verification code
-  console.log(`Phone verification code for ${phone}: ${verificationCode}`);
+  // Send SMS verification
+  await sendVerificationSMS(phone, verificationCode);
 
   res.json({
     message: 'Verification code sent to your phone',
@@ -282,8 +283,8 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       user.verificationCode = verificationCode;
       user.verificationCodeExpiry = codeExpiry;
       
-      // In a real application, we would send an email with the verification code
-      console.log(`New verification code for ${req.body.email}: ${verificationCode}`);
+      // Send verification email to new address
+      await sendVerificationEmail(req.body.email, user.name, verificationCode);
     }
 
     if (req.body.password) {
