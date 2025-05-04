@@ -11,7 +11,7 @@ const twilio = require('twilio');
 const sendVerificationEmail = async (email, name, verificationCode) => {
   try {
     // Create transporter
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
       secure: process.env.SMTP_SECURE === 'true',
