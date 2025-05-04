@@ -155,7 +155,7 @@ const ListPropertyPage = () => {
 
   const requestPhoneVerification = async () => {
     try {
-      const phone = prompt("Enter your phone number for verification:");
+      const phone = prompt("Enter your phone number for verification (Indian format):");
       
       if (!phone) return;
       
@@ -168,7 +168,16 @@ const ListPropertyPage = () => {
         body: JSON.stringify({ phone })
       });
       
+      const data = await response.json();
+      
       if (response.ok) {
+        toast.success("Verification code sent to your phone");
+        
+        // In development, show the code from the response if available
+        if (data.code) {
+          toast.info(`Development mode: Your verification code is ${data.code}`);
+        }
+        
         const verificationCode = prompt("Enter the verification code sent to your phone:");
         
         if (verificationCode) {

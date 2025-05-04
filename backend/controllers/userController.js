@@ -1,4 +1,3 @@
-
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const UserVerification = require('../models/userVerificationModel');
@@ -134,6 +133,13 @@ const requestPhoneVerification = asyncHandler(async (req, res) => {
     throw new Error('Please provide a phone number');
   }
 
+  // Basic validation for Indian phone numbers
+  const phoneRegex = /^(\+?91|0)?[6-9]\d{9}$/;
+  if (!phoneRegex.test(phone)) {
+    res.status(400);
+    throw new Error('Please provide a valid Indian phone number');
+  }
+
   const user = await User.findById(req.user._id);
 
   if (!user) {
@@ -152,11 +158,24 @@ const requestPhoneVerification = asyncHandler(async (req, res) => {
   await user.save();
 
   // Send SMS verification
-  await sendVerificationSMS(phone, verificationCode);
+  const smsSent = await sendVerificationSMS(phone, verificationCode);
 
-  res.json({
-    message: 'Verification code sent to your phone',
-  });
+  if (smsSent) {
+    res.json({
+      message: 'Verification code sent to your phone',
+    });
+  } else {
+    // If SMS sending fails, return the code in development environment
+    if (process.env.NODE_ENV === 'development') {
+      res.json({
+        message: 'SMS sending failed, but in development mode. Your code is: ' + verificationCode,
+        code: verificationCode
+      });
+    } else {
+      res.status(500);
+      throw new Error('Failed to send verification SMS. Please try again later.');
+    }
+  }
 });
 
 // @desc    Verify phone number

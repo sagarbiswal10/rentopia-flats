@@ -72,6 +72,21 @@ const sendVerificationSMS = async (phoneNumber, verificationCode) => {
       return false;
     }
 
+    // Format phone number for Twilio (ensure it has the country code)
+    let formattedNumber = phoneNumber;
+    
+    // For Indian numbers, ensure +91 prefix
+    if (phoneNumber.startsWith('0')) {
+      formattedNumber = '+91' + phoneNumber.slice(1);
+    } else if (phoneNumber.startsWith('91')) {
+      formattedNumber = '+' + phoneNumber;
+    } else if (!phoneNumber.startsWith('+')) {
+      // If no country code, assume Indian number
+      formattedNumber = '+91' + phoneNumber;
+    }
+    
+    console.log(`Sending SMS to formatted number: ${formattedNumber}`);
+
     // Create Twilio client
     const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
@@ -79,13 +94,17 @@ const sendVerificationSMS = async (phoneNumber, verificationCode) => {
     await client.messages.create({
       body: `Your RentEasy verification code is: ${verificationCode}`,
       from: process.env.TWILIO_PHONE_NUMBER,
-      to: phoneNumber,
+      to: formattedNumber,
     });
 
-    console.log(`Verification SMS sent to ${phoneNumber}`);
+    console.log(`Verification SMS sent to ${formattedNumber}`);
     return true;
   } catch (error) {
     console.error('Error sending verification SMS:', error);
+    console.error('Error details:', error.message);
+    if (error.code) {
+      console.error('Error code:', error.code);
+    }
     return false;
   }
 };
