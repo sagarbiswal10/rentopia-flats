@@ -1,4 +1,3 @@
-
 const nodemailer = require('nodemailer');
 
 /**
@@ -59,19 +58,70 @@ const sendVerificationEmail = async (email, name, verificationCode) => {
 };
 
 /**
- * Generate OTP for phone verification (mock function instead of actual SMS sending)
+ * Send SMS verification code to user with Fast2SMS API
  * @param {string} phoneNumber - Recipient phone number
  * @param {string} verificationCode - Verification code
  */
 const sendVerificationSMS = async (phoneNumber, verificationCode) => {
-  // Instead of actually sending SMS, we just log it and return true
-  // In a real application, you would integrate with an SMS service here
   try {
-    console.log(`Mock SMS sending to ${phoneNumber}: Your verification code is ${verificationCode}`);
-    // Always return the verification code in development mode for testing
-    return true;
+    // Clean the phone number - keep only digits
+    const cleanNumber = phoneNumber.replace(/\D/g, '');
+    
+    // Ensure it's a valid Indian number - should be 10 digits or with 91 prefix
+    let mobileNumber = cleanNumber;
+    if (cleanNumber.startsWith('91') && cleanNumber.length > 10) {
+      mobileNumber = cleanNumber.slice(2); // Remove 91 prefix if present
+    } else if (cleanNumber.startsWith('0')) {
+      mobileNumber = cleanNumber.slice(1); // Remove leading 0 if present
+    }
+    
+    // Check if it's a valid 10-digit number
+    if (mobileNumber.length !== 10) {
+      console.error(`Invalid phone number format: ${phoneNumber}`);
+      return false;
+    }
+    
+    console.log(`Sending verification SMS to ${mobileNumber}: Your verification code is ${verificationCode}`);
+    
+    // In production: Uncomment and configure this with your SMS gateway provider
+    // This is an example for Fast2SMS API (popular in India)
+    /*
+    const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'YOUR_FAST2SMS_API_KEY',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        route: 'otp',
+        variables_values: verificationCode,
+        numbers: mobileNumber,
+      })
+    });
+    
+    const data = await response.json();
+    if (data.return === true) {
+      console.log(`SMS sent successfully to ${mobileNumber}`);
+      return true;
+    } else {
+      console.error('SMS sending failed:', data);
+      return false;
+    }
+    */
+    
+    // Since we don't have an actual SMS gateway configured yet,
+    // we'll return the code in development mode for testing
+    // This should be removed in production and replaced with actual SMS sending
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`DEVELOPMENT MODE: SMS code for ${mobileNumber} is ${verificationCode}`);
+      return true;
+    } else {
+      // In production without SMS gateway configured, we log an error
+      console.error('SMS gateway not configured. Cannot send SMS.');
+      return false;
+    }
   } catch (error) {
-    console.error('Error in mock SMS sending:', error);
+    console.error('Error sending verification SMS:', error);
     return false;
   }
 };

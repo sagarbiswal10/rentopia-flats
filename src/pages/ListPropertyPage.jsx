@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -159,6 +158,8 @@ const ListPropertyPage = () => {
       
       if (!phone) return;
       
+      toast.info("Sending verification code to your phone...");
+      
       const response = await fetch('http://localhost:5000/api/users/verify-phone-request', {
         method: 'POST',
         headers: {
@@ -175,7 +176,9 @@ const ListPropertyPage = () => {
         
         // In development, show the code from the response if available
         if (data.code) {
-          toast.info(`Development mode: Your verification code is ${data.code}`);
+          toast.info(`Development mode: Your verification code is ${data.code}`, {
+            duration: 10000
+          });
         }
         
         const verificationCode = prompt("Enter the verification code sent to your phone:");
