@@ -34,26 +34,28 @@ const usePhoneVerification = (token) => {
         body: JSON.stringify({ phone: phoneNumber }),
       });
       
-      // Clone the response before reading the body
-      const clonedResponse = response.clone();
       const data = await response.json();
       
       if (!response.ok) {
         throw new Error(data.message || 'Failed to send verification code');
       }
       
-      // If in development mode and code is returned for testing
+      // Show code for testing
       if (data.code) {
-        console.log('Development mode: Verification code:', data.code);
+        console.log('Verification code:', data.code);
         setVerificationCode(data.code);
+        toast.info(`Your OTP is: ${data.code}`, { 
+          duration: 10000,
+          description: "Use this code for verification" 
+        });
       }
       
       setIsVerificationSent(true);
-      toast.success('Verification code sent to your phone');
+      toast.success('Verification code generated successfully');
       return true;
     } catch (error) {
       console.error('Error in phone verification:', error);
-      toast.error('An error occurred during phone verification');
+      toast.error(error.message || 'An error occurred during phone verification');
       return false;
     } finally {
       setIsVerifying(false);

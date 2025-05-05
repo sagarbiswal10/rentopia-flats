@@ -1,6 +1,5 @@
 
 const nodemailer = require('nodemailer');
-const twilio = require('twilio');
 
 /**
  * Send email verification link to user
@@ -60,51 +59,19 @@ const sendVerificationEmail = async (email, name, verificationCode) => {
 };
 
 /**
- * Send SMS verification code to user
+ * Generate OTP for phone verification (mock function instead of actual SMS sending)
  * @param {string} phoneNumber - Recipient phone number
  * @param {string} verificationCode - Verification code
  */
 const sendVerificationSMS = async (phoneNumber, verificationCode) => {
+  // Instead of actually sending SMS, we just log it and return true
+  // In a real application, you would integrate with an SMS service here
   try {
-    // Check if Twilio credentials are configured
-    if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
-      console.error('Twilio credentials not configured');
-      return false;
-    }
-
-    // Format phone number for Twilio (ensure it has the country code)
-    let formattedNumber = phoneNumber.trim();
-    
-    // For Indian numbers, ensure +91 prefix
-    if (formattedNumber.startsWith('0')) {
-      formattedNumber = '+91' + formattedNumber.slice(1);
-    } else if (formattedNumber.startsWith('91')) {
-      formattedNumber = '+' + formattedNumber;
-    } else if (!formattedNumber.startsWith('+')) {
-      // If no country code, assume Indian number
-      formattedNumber = '+91' + formattedNumber;
-    }
-    
-    console.log(`Sending SMS to formatted number: ${formattedNumber}`);
-
-    // Create Twilio client
-    const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
-    // Send SMS
-    await client.messages.create({
-      body: `Your RentEasy verification code is: ${verificationCode}`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: formattedNumber,
-    });
-
-    console.log(`Verification SMS sent to ${formattedNumber}`);
+    console.log(`Mock SMS sending to ${phoneNumber}: Your verification code is ${verificationCode}`);
+    // Always return the verification code in development mode for testing
     return true;
   } catch (error) {
-    console.error('Error sending verification SMS:', error);
-    console.error('Error details:', error.message);
-    if (error.code) {
-      console.error('Error code:', error.code);
-    }
+    console.error('Error in mock SMS sending:', error);
     return false;
   }
 };
