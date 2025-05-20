@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -43,6 +42,40 @@ const PropertyDetailPage = () => {
     'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop'
   ];
   
+  // Function to get type-specific images - similar to PropertyCard component
+  const getTypeSpecificImages = (type) => {
+    switch(type) {
+      case 'apartment':
+        return realApartmentImages;
+      case 'villa':
+        return realVillaImages;
+      case 'house':
+        return [
+          'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1598228723793-52759bba239c?w=800&auto=format&fit=crop'
+        ];
+      case 'condo':
+        return [
+          'https://images.unsplash.com/photo-1554995207-c18c203602cb?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1512916194211-3f2b7f5f7de3?w=800&auto=format&fit=crop'
+        ];
+      case 'office':
+        return [
+          'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1604328698692-f76ea9498e76?w=800&auto=format&fit=crop'
+        ];
+      default:
+        return [
+          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?w=800&auto=format&fit=crop'
+        ];
+    }
+  };
+  
   useEffect(() => {
     const fetchProperty = async () => {
       try {
@@ -54,17 +87,11 @@ const PropertyDetailPage = () => {
         const data = await response.json();
         console.log('Property fetched successfully:', data);
         
-        // Enhance with real images based on property type if none exist
+        // Enhance with real images based on property type if none exist or if server-relative paths
         let enhancedData = { ...data };
         if (!enhancedData.images || enhancedData.images.length === 0 || 
-            enhancedData.images[0].includes('placeholder')) {
-          if (enhancedData.type === 'apartment') {
-            enhancedData.images = realApartmentImages;
-            enhancedData.thumbnailUrl = realApartmentImages[0];
-          } else if (enhancedData.type === 'villa') {
-            enhancedData.images = realVillaImages;
-            enhancedData.thumbnailUrl = realVillaImages[0];
-          }
+            (enhancedData.images[0] && enhancedData.images[0].startsWith('/uploads/'))) {
+          enhancedData.images = getTypeSpecificImages(enhancedData.type);
         }
         
         setProperty(enhancedData);
@@ -221,9 +248,10 @@ const PropertyDetailPage = () => {
   // Determine if property is truly available (considering the user's own pending rental)
   const canRent = available || (existingRental && existingRental.paymentStatus === 'pending');
   
-  // Ensure we have images to display
-  const propertyImages = images && images.length > 0 ? images : 
-    (type === 'apartment' ? realApartmentImages : realVillaImages);
+  // Ensure we have valid images to display - use type-specific images for server-relative paths
+  const propertyImages = (!images || images.length === 0 || 
+    (images[0] && images[0].startsWith('/uploads/'))) ? 
+    getTypeSpecificImages(type) : images;
   
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -248,7 +276,9 @@ const PropertyDetailPage = () => {
                               className="w-full h-full object-cover"
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = '/placeholder.svg';
+                                // Fall back to type-specific image if this one fails
+                                const fallbackImages = getTypeSpecificImages(type);
+                                e.target.src = fallbackImages[0];
                               }}
                             />
                           </div>
