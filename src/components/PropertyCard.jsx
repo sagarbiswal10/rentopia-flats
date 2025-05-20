@@ -71,13 +71,14 @@ const PropertyCard = ({ property }) => {
     }
   };
   
-  // If images array is empty or contains placeholders, use type-specific images
-  const propertyImages = (images && images.length > 0 && !images[0].includes('placeholder')) 
-    ? images 
-    : getTypeSpecificImages(type);
+  // If images array is empty, undefined, or contains server-relative paths, use type-specific images
+  const propertyImages = (!images || images.length === 0 || 
+    (images[0] && images[0].startsWith('/uploads/'))) 
+    ? getTypeSpecificImages(type) 
+    : images;
   
-  // Use thumbnailUrl as first image if available, otherwise use the first from the array
-  const imageArray = thumbnailUrl && !thumbnailUrl.includes('placeholder') 
+  // Use thumbnailUrl if available and not a server-relative path, otherwise use the first from the array
+  const imageArray = thumbnailUrl && !thumbnailUrl.startsWith('/uploads/') 
     ? [thumbnailUrl, ...propertyImages] 
     : propertyImages;
   
@@ -86,11 +87,13 @@ const PropertyCard = ({ property }) => {
   
   const nextImage = (e) => {
     e.preventDefault(); // Prevent link navigation
+    e.stopPropagation(); // Stop event propagation
     setCurrentImageIndex((prevIndex) => (prevIndex + 1) % imageArray.length);
   };
   
   const prevImage = (e) => {
     e.preventDefault(); // Prevent link navigation
+    e.stopPropagation(); // Stop event propagation
     setCurrentImageIndex((prevIndex) => (prevIndex - 1 + imageArray.length) % imageArray.length);
   };
 
@@ -106,7 +109,9 @@ const PropertyCard = ({ property }) => {
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = '/placeholder.svg';
+                // Fall back to type-specific image if this one fails
+                const typeImages = getTypeSpecificImages(type);
+                e.target.src = typeImages[0];
               }}
             />
           </AspectRatio>
@@ -116,14 +121,14 @@ const PropertyCard = ({ property }) => {
             <>
               <button 
                 onClick={prevImage}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors z-10"
                 aria-label="Previous image"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
               <button 
                 onClick={nextImage}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors z-10"
                 aria-label="Next image"
               >
                 <ChevronRight className="h-5 w-5" />
