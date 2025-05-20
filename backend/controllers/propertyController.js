@@ -3,6 +3,51 @@ const Property = require('../models/propertyModel');
 const UserVerification = require('../models/userVerificationModel');
 const asyncHandler = require('express-async-handler');
 
+// Default property images
+const defaultPropertyImages = [
+  'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?w=800&auto=format&fit=crop'
+];
+
+// Generate type-specific images
+const getTypeBasedImages = (type) => {
+  switch(type) {
+    case 'apartment':
+      return [
+        'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1502672023488-70e25813eb80?w=800&auto=format&fit=crop'
+      ];
+    case 'house':
+      return [
+        'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1598228723793-52759bba239c?w=800&auto=format&fit=crop'
+      ];
+    case 'villa':
+      return [
+        'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&auto=format&fit=crop'
+      ];
+    case 'condo':
+      return [
+        'https://images.unsplash.com/photo-1554995207-c18c203602cb?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1512916194211-3f2b7f5f7de3?w=800&auto=format&fit=crop'
+      ];
+    case 'office':
+      return [
+        'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1604328698692-f76ea9498e76?w=800&auto=format&fit=crop'
+      ];
+    default:
+      return defaultPropertyImages;
+  }
+};
+
 // Utility function to check for suspicious pricing
 const checkSuspiciousPricing = async (rent, type, city) => {
   // Get average rent for similar properties
@@ -81,6 +126,13 @@ const createProperty = asyncHandler(async (req, res) => {
   // Check for suspicious pricing
   const isSuspicious = await checkSuspiciousPricing(rent, type, city);
   
+  // Provide default images based on property type if none are specified
+  const propertyImages = images && images.length > 0 ? 
+    images : getTypeBasedImages(type);
+  
+  const propertyThumbnail = thumbnailUrl || 
+    (propertyImages.length > 0 ? propertyImages[0] : '/placeholder.svg');
+  
   // Create property
   const property = await Property.create({
     user: req.user._id,
@@ -97,8 +149,8 @@ const createProperty = asyncHandler(async (req, res) => {
     city,
     state,
     amenities: amenities || [],
-    images: images || [],
-    thumbnailUrl: thumbnailUrl || '',
+    images: propertyImages,
+    thumbnailUrl: propertyThumbnail,
     // Fraud prevention fields
     suspiciousFlags: isSuspicious ? 1 : 0,
     // If user is verified, auto-verify their property

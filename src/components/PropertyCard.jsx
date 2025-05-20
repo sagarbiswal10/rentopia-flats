@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bed, Bath, MapPin, IndianRupee } from 'lucide-react';
+import { Bed, Bath, MapPin, IndianRupee, ChevronLeft, ChevronRight } from 'lucide-react';
 import SquareFootage from '@/components/icons/SquareFootage';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const PropertyCard = ({ property }) => {
   const {
@@ -28,23 +29,76 @@ const PropertyCard = ({ property }) => {
   // Use _id if available, otherwise fall back to id (for compatibility with both sources)
   const propertyId = _id || id;
   
-  // Use thumbnailUrl if available, otherwise use the first image
-  const imageUrl = thumbnailUrl || (images && images.length > 0 ? images[0] : '/placeholder.svg');
+  // Default images if none provided
+  const defaultImages = [
+    '/placeholder.svg',
+    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?w=800&auto=format&fit=crop'
+  ];
+  
+  // If images array is empty or undefined, use default images
+  const propertyImages = (images && images.length > 0) ? images : defaultImages;
+  
+  // Use thumbnailUrl as first image if available, otherwise use the first from the array
+  const imageArray = thumbnailUrl ? [thumbnailUrl, ...propertyImages] : propertyImages;
+  
+  // Image carousel state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  const nextImage = (e) => {
+    e.preventDefault(); // Prevent link navigation
+    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % imageArray.length);
+  };
+  
+  const prevImage = (e) => {
+    e.preventDefault(); // Prevent link navigation
+    setCurrentImageIndex((prevIndex) => (prevIndex - 1 + imageArray.length) % imageArray.length);
+  };
 
   return (
     <Link to={`/property/${propertyId}`}>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
-        {/* Property Image */}
+        {/* Property Image Carousel */}
         <div className="relative">
-          <img
-            src={imageUrl}
-            alt={title}
-            className="w-full h-48 object-cover"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = '/placeholder.svg';
-            }}
-          />
+          <AspectRatio ratio={16/9}>
+            <img
+              src={imageArray[currentImageIndex]}
+              alt={title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = '/placeholder.svg';
+              }}
+            />
+          </AspectRatio>
+          
+          {/* Image navigation buttons */}
+          {imageArray.length > 1 && (
+            <>
+              <button 
+                onClick={prevImage}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button 
+                onClick={nextImage}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
+                aria-label="Next image"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+              
+              {/* Image counter */}
+              <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                {currentImageIndex + 1}/{imageArray.length}
+              </div>
+            </>
+          )}
+          
+          {/* Property Badges */}
           <Badge
             className={`absolute top-2 right-2 ${available ? 'bg-green-500' : 'bg-red-500'}`}
           >
