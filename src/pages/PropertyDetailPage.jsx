@@ -7,9 +7,16 @@ import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bed, Bath, Calendar, MapPin, Phone, IndianRupee, User, MessageCircle } from 'lucide-react';
+import { Bed, Bath, Calendar, MapPin, Phone, IndianRupee, User, MessageCircle, Images } from 'lucide-react';
 import SquareFootage from '@/components/icons/SquareFootage';
 import { toast } from 'sonner';
+import { 
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const PropertyDetailPage = () => {
   const { id } = useParams();
@@ -21,6 +28,21 @@ const PropertyDetailPage = () => {
   const [error, setError] = useState(null);
   const [existingRental, setExistingRental] = useState(null);
   
+  // Define real high-quality apartment and villa images
+  const realApartmentImages = [
+    'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1502672023488-70e25813eb80?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&auto=format&fit=crop'
+  ];
+  
+  const realVillaImages = [
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop'
+  ];
+  
   useEffect(() => {
     const fetchProperty = async () => {
       try {
@@ -31,7 +53,21 @@ const PropertyDetailPage = () => {
         
         const data = await response.json();
         console.log('Property fetched successfully:', data);
-        setProperty(data);
+        
+        // Enhance with real images based on property type if none exist
+        let enhancedData = { ...data };
+        if (!enhancedData.images || enhancedData.images.length === 0 || 
+            enhancedData.images[0].includes('placeholder')) {
+          if (enhancedData.type === 'apartment') {
+            enhancedData.images = realApartmentImages;
+            enhancedData.thumbnailUrl = realApartmentImages[0];
+          } else if (enhancedData.type === 'villa') {
+            enhancedData.images = realVillaImages;
+            enhancedData.thumbnailUrl = realVillaImages[0];
+          }
+        }
+        
+        setProperty(enhancedData);
       } catch (err) {
         console.error('Error fetching property:', err);
         setError(err.message);
@@ -137,10 +173,6 @@ const PropertyDetailPage = () => {
         totalAmount: property.rent + property.deposit,
       };
       
-      // Log the rental data and token being used
-      console.log('Creating rental with data:', rentalData);
-      console.log('Using token:', token ? 'Token exists' : 'No token');
-      
       // Option 1: Use addRental from context if it exists
       if (typeof addRental === 'function') {
         const newRental = await addRental(rentalData);
@@ -189,6 +221,10 @@ const PropertyDetailPage = () => {
   // Determine if property is truly available (considering the user's own pending rental)
   const canRent = available || (existingRental && existingRental.paymentStatus === 'pending');
   
+  // Ensure we have images to display
+  const propertyImages = images && images.length > 0 ? images : 
+    (type === 'apartment' ? realApartmentImages : realVillaImages);
+  
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
@@ -198,46 +234,40 @@ const PropertyDetailPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Property Images & Details */}
             <div className="lg:col-span-2">
-              {/* Property Images */}
-              <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
-                <div className="relative aspect-video">
-                  <img 
-                    src={property.thumbnailUrl || (images && images.length > 0 ? images[0] : '/placeholder.svg')} 
-                    alt={title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = '/placeholder.svg';
-                    }}
-                  />
-                  <Badge 
-                    className={`absolute top-4 left-4 ${
-                      available ? 'bg-green-500' : 'bg-red-500'
-                    }`}
-                  >
-                    {available ? 'Available' : 'Unavailable'}
-                  </Badge>
-                </div>
-                
-                {/* Thumbnail Gallery */}
-                {images && images.length > 1 && (
-                  <div className="grid grid-cols-4 gap-2 p-2">
-                    {images.slice(0, 4).map((img, index) => (
-                      <div key={index} className="aspect-video cursor-pointer">
-                        <img 
-                          src={img} 
-                          alt={`Property ${index + 1}`}
-                          className="w-full h-full object-cover rounded"
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = '/placeholder.svg';
-                          }}
-                        />
-                      </div>
-                    ))}
+              {/* Property Images Carousel */}
+              <Card className="mb-6 overflow-hidden">
+                <div className="p-4">
+                  <Carousel className="w-full">
+                    <CarouselContent>
+                      {propertyImages.map((image, index) => (
+                        <CarouselItem key={index}>
+                          <div className="aspect-video overflow-hidden rounded-lg">
+                            <img 
+                              src={image} 
+                              alt={`${title} - Image ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = '/placeholder.svg';
+                              }}
+                            />
+                          </div>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <CarouselPrevious className="left-2" />
+                    <CarouselNext className="right-2" />
+                  </Carousel>
+                  
+                  {/* Image indicator */}
+                  <div className="mt-4 flex justify-center">
+                    <Badge variant="outline" className="flex items-center">
+                      <Images className="h-4 w-4 mr-1" />
+                      <span>{propertyImages.length} Photos</span>
+                    </Badge>
                   </div>
-                )}
-              </div>
+                </div>
+              </Card>
               
               {/* Property Details */}
               <Card className="mb-6">

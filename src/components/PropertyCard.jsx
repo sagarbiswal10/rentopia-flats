@@ -29,19 +29,57 @@ const PropertyCard = ({ property }) => {
   // Use _id if available, otherwise fall back to id (for compatibility with both sources)
   const propertyId = _id || id;
   
-  // Default images if none provided
-  const defaultImages = [
-    '/placeholder.svg',
-    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?w=800&auto=format&fit=crop'
-  ];
+  // High-quality real estate images based on property type
+  const getTypeSpecificImages = (type) => {
+    switch(type) {
+      case 'apartment':
+        return [
+          'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&auto=format&fit=crop'
+        ];
+      case 'villa':
+        return [
+          'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800&auto=format&fit=crop'
+        ];
+      case 'house':
+        return [
+          'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1598228723793-52759bba239c?w=800&auto=format&fit=crop'
+        ];
+      case 'condo':
+        return [
+          'https://images.unsplash.com/photo-1554995207-c18c203602cb?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1512916194211-3f2b7f5f7de3?w=800&auto=format&fit=crop'
+        ];
+      case 'office':
+        return [
+          'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1604328698692-f76ea9498e76?w=800&auto=format&fit=crop'
+        ];
+      default:
+        return [
+          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1560185127-6ed189bf02f4?w=800&auto=format&fit=crop'
+        ];
+    }
+  };
   
-  // If images array is empty or undefined, use default images
-  const propertyImages = (images && images.length > 0) ? images : defaultImages;
+  // If images array is empty or contains placeholders, use type-specific images
+  const propertyImages = (images && images.length > 0 && !images[0].includes('placeholder')) 
+    ? images 
+    : getTypeSpecificImages(type);
   
   // Use thumbnailUrl as first image if available, otherwise use the first from the array
-  const imageArray = thumbnailUrl ? [thumbnailUrl, ...propertyImages] : propertyImages;
+  const imageArray = thumbnailUrl && !thumbnailUrl.includes('placeholder') 
+    ? [thumbnailUrl, ...propertyImages] 
+    : propertyImages;
   
   // Image carousel state
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
