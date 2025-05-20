@@ -74,6 +74,28 @@ const propertySchema = mongoose.Schema(
       type: String,
       default: '',
     },
+    rentalAgreement: {
+      type: String,
+      default: '',
+    },
+    additionalServices: {
+      packing: {
+        available: { type: Boolean, default: true },
+        price: { type: Number, default: 2000 }
+      },
+      moving: {
+        available: { type: Boolean, default: true },
+        price: { type: Number, default: 5000 }
+      },
+      cleaning: {
+        available: { type: Boolean, default: true },
+        price: { type: Number, default: 1500 }
+      },
+      painting: {
+        available: { type: Boolean, default: true },
+        price: { type: Number, default: 8000 }
+      }
+    },
     // Added fraud prevention fields
     verificationStatus: {
       type: String,

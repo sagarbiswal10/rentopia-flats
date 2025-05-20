@@ -13,6 +13,10 @@ const paymentSchema = mongoose.Schema(
       required: true,
       ref: 'Property',
     },
+    rental: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Rental',
+    },
     amount: {
       type: Number,
       required: [true, 'Please specify payment amount'],
@@ -20,18 +24,37 @@ const paymentSchema = mongoose.Schema(
     paymentMethod: {
       type: String,
       required: [true, 'Please specify payment method'],
-      enum: ['card', 'upi', 'wallet'],
+      enum: ['card', 'upi', 'wallet', 'bank_transfer'],
+    },
+    paymentType: {
+      type: String,
+      enum: ['rent', 'deposit', 'service', 'booking_fee'],
+      default: 'rent',
     },
     status: {
       type: String,
       enum: ['pending', 'completed', 'failed'],
       default: 'completed',
     },
+    paymentDate: {
+      type: Date,
+      default: Date.now,
+    },
     transactionId: {
       type: String,
       default: function() {
         return 'txn_' + Date.now() + Math.floor(Math.random() * 1000);
       },
+    },
+    monthlyPaymentDetails: {
+      month: Number,
+      year: Number,
+    },
+    serviceDetails: {
+      packing: Boolean,
+      moving: Boolean,
+      cleaning: Boolean,
+      painting: Boolean,
     },
   },
   {

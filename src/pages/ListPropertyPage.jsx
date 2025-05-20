@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -14,7 +15,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Home, MapPin, IndianRupee, Upload, Calendar, Shield, Lock, Flag } from 'lucide-react';
+import { Home, MapPin, IndianRupee, Upload, Calendar, Shield, Lock, Flag, X, Plus, Loader2 } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -47,6 +48,8 @@ const propertySchema = z.object({
   termsAccepted: z.boolean().refine(val => val === true, {
     message: "You must accept the terms and conditions"
   }),
+  images: z.any(),
+  rentalAgreement: z.any().optional(),
 });
 
 const ListPropertyPage = () => {
@@ -63,6 +66,10 @@ const ListPropertyPage = () => {
     listingsCount: 0,
   });
   const [openVerificationDialog, setOpenVerificationDialog] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedAgreement, setUploadedAgreement] = useState(null);
+  const [newPropertyId, setNewPropertyId] = useState(null);
   
   // Redirect if not logged in
   React.useEffect(() => {
@@ -135,6 +142,8 @@ const ListPropertyPage = () => {
       addressProof: null,
       ownershipProof: null,
       termsAccepted: false,
+      images: [],
+      rentalAgreement: null,
     },
   });
 
@@ -150,6 +159,94 @@ const ListPropertyPage = () => {
         return updated;
       }
     });
+  };
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      // Preview images
+      const newPreviewImages = files.map(file => ({
+        file,
+        preview: URL.createObjectURL(file)
+      }));
+      setUploadedImages(prev => [...prev, ...newPreviewImages]);
+      form.setValue('images', files);
+    }
+  };
+
+  const removeImage = (index) => {
+    const newImages = [...uploadedImages];
+    // Revoke object URL to avoid memory leaks
+    URL.revokeObjectURL(newImages[index].preview);
+    newImages.splice(index, 1);
+    setUploadedImages(newImages);
+  };
+
+  const handleAgreementChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setUploadedAgreement({
+        file,
+        name: file.name
+      });
+      form.setValue('rentalAgreement', file);
+    }
+  };
+
+  const uploadImages = async (propertyId) => {
+    if (uploadedImages.length === 0) return;
+    
+    const formData = new FormData();
+    uploadedImages.forEach(img => {
+      formData.append('images', img.file);
+    });
+    
+    try {
+      const response = await fetch(`http://localhost:5000/api/properties/${propertyId}/images`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to upload images');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      throw error;
+    }
+  };
+
+  const uploadAgreement = async (propertyId) => {
+    if (!uploadedAgreement) return;
+    
+    const formData = new FormData();
+    formData.append('agreement', uploadedAgreement.file);
+    
+    try {
+      const response = await fetch(`http://localhost:5000/api/properties/${propertyId}/agreement`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to upload rental agreement');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error uploading rental agreement:', error);
+      throw error;
+    }
   };
 
   const requestPhoneVerification = async () => {
@@ -259,12 +356,18 @@ const ListPropertyPage = () => {
     setIsSubmitting(true);
     
     try {
-      // Create property data object
+      // Create property data object (without files)
       const propertyData = {
         ...values,
-        images: ["/placeholder.svg"], // Placeholder images array (would be replaced with actual images in production)
-        thumbnailUrl: "/placeholder.svg", // Placeholder image
+        images: [], // Will be uploaded separately
+        thumbnailUrl: "/placeholder.svg", // Will be updated after image upload
       };
+      
+      // Remove file objects from form data
+      delete propertyData.images;
+      delete propertyData.rentalAgreement;
+      delete propertyData.addressProof;
+      delete propertyData.ownershipProof;
       
       // Send data to backend API
       const response = await fetch('http://localhost:5000/api/properties', {
@@ -282,6 +385,18 @@ const ListPropertyPage = () => {
       }
       
       const newProperty = await response.json();
+      setNewPropertyId(newProperty._id);
+      
+      // Upload images if any
+      setIsUploading(true);
+      if (uploadedImages.length > 0) {
+        await uploadImages(newProperty._id);
+      }
+      
+      // Upload rental agreement if any
+      if (uploadedAgreement) {
+        await uploadAgreement(newProperty._id);
+      }
       
       toast.success("Property listed successfully!");
       navigate(`/property/${newProperty._id}`);
@@ -290,6 +405,7 @@ const ListPropertyPage = () => {
       toast.error(error.message || "Failed to list property. Please try again.");
     } finally {
       setIsSubmitting(false);
+      setIsUploading(false);
     }
   };
 
@@ -725,6 +841,122 @@ const ListPropertyPage = () => {
                     />
                   </div>
                   
+                  {/* Property Images Upload */}
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-semibold">Property Images</h2>
+                    
+                    <FormField
+                      control={form.control}
+                      name="images"
+                      render={() => (
+                        <FormItem>
+                          <FormLabel>Upload Images</FormLabel>
+                          <FormControl>
+                            <div className="border-2 border-dashed border-gray-300 rounded-md p-6">
+                              <label className="flex flex-col items-center justify-center cursor-pointer">
+                                <Upload className="h-8 w-8 text-gray-400" />
+                                <p className="mt-2 text-sm text-gray-600">
+                                  Click to select images
+                                </p>
+                                <p className="mt-1 text-xs text-gray-500">
+                                  JPG, PNG or JPEG (max 10 images)
+                                </p>
+                                <input 
+                                  type="file" 
+                                  multiple
+                                  accept=".jpg,.jpeg,.png"
+                                  className="hidden"
+                                  onChange={handleImageChange}
+                                />
+                              </label>
+                            </div>
+                          </FormControl>
+                          <FormDescription>
+                            Using real property photos increases trust. Avoid stock images or misrepresentations.
+                          </FormDescription>
+                          <FormMessage />
+                          
+                          {/* Preview uploaded images */}
+                          {uploadedImages.length > 0 && (
+                            <div className="mt-4">
+                              <h3 className="text-sm font-medium mb-2">Uploaded Images ({uploadedImages.length})</h3>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                {uploadedImages.map((img, index) => (
+                                  <div key={index} className="relative group">
+                                    <img 
+                                      src={img.preview} 
+                                      alt={`Preview ${index + 1}`} 
+                                      className="h-24 w-full object-cover rounded-md" 
+                                    />
+                                    <button 
+                                      type="button"
+                                      onClick={() => removeImage(index)}
+                                      className="absolute top-0 right-0 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Rental Agreement Upload */}
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-semibold">Rental Agreement</h2>
+                    
+                    <FormField
+                      control={form.control}
+                      name="rentalAgreement"
+                      render={() => (
+                        <FormItem>
+                          <FormLabel>Upload Rental Agreement Template</FormLabel>
+                          <FormControl>
+                            <div className="border-2 border-dashed border-gray-300 rounded-md p-6">
+                              <label className="flex flex-col items-center justify-center cursor-pointer">
+                                <Upload className="h-8 w-8 text-gray-400" />
+                                <p className="mt-2 text-sm text-gray-600">
+                                  Click to upload rental agreement
+                                </p>
+                                <p className="mt-1 text-xs text-gray-500">
+                                  PDF format recommended
+                                </p>
+                                <input 
+                                  type="file" 
+                                  accept=".pdf,.doc,.docx"
+                                  className="hidden"
+                                  onChange={handleAgreementChange} 
+                                />
+                              </label>
+                            </div>
+                          </FormControl>
+                          <FormDescription>
+                            Upload a rental agreement template that will be used for tenants.
+                          </FormDescription>
+                          <FormMessage />
+                          
+                          {/* Show uploaded file name */}
+                          {uploadedAgreement && (
+                            <div className="mt-2 flex items-center p-2 bg-gray-50 rounded-md">
+                              <div className="flex-1 truncate">{uploadedAgreement.name}</div>
+                              <button
+                                type="button"
+                                onClick={() => setUploadedAgreement(null)}
+                                className="ml-2 text-red-500"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
                   {/* Availability */}
                   <div className="space-y-4">
                     <h2 className="text-xl font-semibold">Availability</h2>
@@ -769,24 +1001,6 @@ const ListPropertyPage = () => {
                       />
                     </div>
                   </div>
-                  
-                  {/* Image Upload (placeholder) */}
-                  <div className="space-y-4">
-                    <h2 className="text-xl font-semibold">Property Images</h2>
-                    
-                    <div className="border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
-                      <Upload className="h-8 w-8 mx-auto text-gray-400" />
-                      <p className="mt-2 text-sm text-gray-600">
-                        Drag & drop images here, or click to select files
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        (Upload feature is not implemented in this demo)
-                      </p>
-                    </div>
-                    <FormDescription>
-                      Using real property photos increases trust. Avoid stock images or misrepresentations.
-                    </FormDescription>
-                  </div>
 
                   {/* Terms and Conditions */}
                   <FormField
@@ -813,8 +1027,17 @@ const ListPropertyPage = () => {
                     )}
                   />
                   
-                  <Button type="submit" className="w-full" disabled={isSubmitting || userVerification.listingsCount >= userVerification.listingLimit}>
-                    {isSubmitting ? "Listing Property..." : "List Property"}
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={isSubmitting || isUploading || userVerification.listingsCount >= userVerification.listingLimit}
+                  >
+                    {isSubmitting || isUploading ? (
+                      <>
+                        <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                        {isUploading ? "Uploading Images..." : "Listing Property..."}
+                      </>
+                    ) : "List Property"}
                   </Button>
                 </form>
               </Form>

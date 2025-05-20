@@ -1,6 +1,9 @@
 
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const {
   createProperty,
   getProperties,
@@ -10,8 +13,41 @@ const {
   deleteProperty,
   reportProperty,
   verifyUserIdentity,
+  uploadPropertyImages,
+  uploadRentalAgreement,
 } = require('../controllers/propertyController');
 const { protect } = require('../middleware/authMiddleware');
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = './uploads';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  // Accept images and PDFs
+  if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+    cb(null, true);
+  } else {
+    cb(new Error('Only images and PDF files are allowed!'), false);
+  }
+};
+
+const upload = multer({ 
+  storage: storage, 
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
 
 router.route('/').get(getProperties).post(protect, createProperty);
 router.route('/user').get(protect, getUserProperties);
@@ -22,6 +58,17 @@ router
   .delete(protect, deleteProperty);
 router.route('/:id/report').post(protect, reportProperty);
 router.route('/verify-identity').post(protect, verifyUserIdentity);
+
+// Image upload routes
+router.route('/:id/images')
+  .post(protect, upload.array('images', 10), uploadPropertyImages);
+
+// Rental agreement upload route
+router.route('/:id/agreement')
+  .post(protect, upload.single('agreement'), uploadRentalAgreement);
+
+// Serve uploaded files statically
+router.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Database seeding route - only in development
 if (process.env.NODE_ENV === 'development') {

@@ -1,7 +1,8 @@
-
 const Property = require('../models/propertyModel');
 const UserVerification = require('../models/userVerificationModel');
 const asyncHandler = require('express-async-handler');
+const path = require('path');
+const fs = require('fs');
 
 // Default property images
 const defaultPropertyImages = [
@@ -304,6 +305,84 @@ const reportProperty = asyncHandler(async (req, res) => {
   res.status(201).json({ message: 'Property reported successfully' });
 });
 
+// @desc    Upload property images
+// @route   POST /api/properties/:id/images
+// @access  Private
+const uploadPropertyImages = asyncHandler(async (req, res) => {
+  const property = await Property.findById(req.params.id);
+
+  if (!property) {
+    res.status(404);
+    throw new Error('Property not found');
+  }
+
+  // Check user ownership
+  if (property.user.toString() !== req.user._id.toString()) {
+    res.status(401);
+    throw new Error('User not authorized');
+  }
+
+  // Check if files were uploaded
+  if (!req.files || req.files.length === 0) {
+    res.status(400);
+    throw new Error('No images uploaded');
+  }
+
+  // Create file paths for database
+  const imagePaths = req.files.map(file => `/uploads/${file.filename}`);
+  
+  // Set thumbnail to first image if none exists
+  if (!property.thumbnailUrl || property.thumbnailUrl === '/placeholder.svg') {
+    property.thumbnailUrl = imagePaths[0];
+  }
+
+  // Add new images to existing ones
+  property.images = [...property.images.filter(img => !img.includes('unsplash.com') && img !== '/placeholder.svg'), ...imagePaths];
+
+  await property.save();
+
+  res.status(200).json({
+    success: true,
+    images: property.images,
+    thumbnailUrl: property.thumbnailUrl
+  });
+});
+
+// @desc    Upload rental agreement
+// @route   POST /api/properties/:id/agreement
+// @access  Private
+const uploadRentalAgreement = asyncHandler(async (req, res) => {
+  const property = await Property.findById(req.params.id);
+
+  if (!property) {
+    res.status(404);
+    throw new Error('Property not found');
+  }
+
+  // Check user ownership
+  if (property.user.toString() !== req.user._id.toString()) {
+    res.status(401);
+    throw new Error('User not authorized');
+  }
+
+  // Check if file was uploaded
+  if (!req.file) {
+    res.status(400);
+    throw new Error('No agreement uploaded');
+  }
+
+  // Create file path for database
+  const agreementPath = `/uploads/${req.file.filename}`;
+  property.rentalAgreement = agreementPath;
+
+  await property.save();
+
+  res.status(200).json({
+    success: true,
+    rentalAgreement: property.rentalAgreement
+  });
+});
+
 // @desc    Verify user's identity
 // @route   POST /api/users/verify-identity
 // @access  Private
@@ -338,4 +417,6 @@ module.exports = {
   deleteProperty,
   reportProperty,
   verifyUserIdentity,
+  uploadPropertyImages,
+  uploadRentalAgreement,
 };
