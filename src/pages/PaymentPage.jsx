@@ -25,6 +25,7 @@ const paymentSchema = z.object({
 
 const PaymentPage = () => {
   const { propertyId } = useParams();
+  const urlParams = useParams(); // Move this to top level
   const { user, token, getUserRentals, getUserProperties } = useUser();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,7 +48,7 @@ const PaymentPage = () => {
   
   useEffect(() => {
     console.log('PaymentPage mounted with propertyId:', propertyId);
-    console.log('Current URL params:', useParams());
+    console.log('Current URL params:', urlParams); // Use the variable instead of calling hook
     console.log('User:', user);
     console.log('Token:', token ? 'Present' : 'Missing');
 
@@ -208,7 +209,7 @@ const PaymentPage = () => {
     };
     
     fetchProperty();
-  }, [propertyId, user, token, navigate, getUserRentals]);
+  }, [propertyId, user, token, navigate, getUserRentals, urlParams]);
   
   const onSubmit = async (values) => {
     if (!user || !property) {
