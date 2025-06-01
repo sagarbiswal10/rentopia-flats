@@ -54,7 +54,7 @@ const PaymentPage = () => {
     console.log('Rental ID from params:', rentalId);
     console.log('Property from state:', propertyFromState);
     console.log('User:', user);
-    console.log('Token:', token ? 'Present' : 'Missing');
+    console.log('Token present:', !!token);
 
     if (!user) {
       console.log('User not logged in, redirecting to login');
@@ -119,6 +119,8 @@ const PaymentPage = () => {
         }
       };
       
+      console.log('Sending rental creation request:', rentalData);
+      
       const response = await fetch('http://localhost:5000/api/rentals', {
         method: 'POST',
         headers: {
@@ -128,9 +130,12 @@ const PaymentPage = () => {
         body: JSON.stringify(rentalData),
       });
       
+      console.log('Rental creation response status:', response.status);
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to create rental');
+        console.error('Rental creation error:', errorData);
+        throw new Error(errorData.message || `Failed to create rental: ${response.status}`);
       }
       
       const newRental = await response.json();
@@ -150,10 +155,12 @@ const PaymentPage = () => {
   const fetchRentalAndProperty = async () => {
     try {
       console.log(`Fetching rental with ID: ${rentalId}`);
+      console.log('Request headers will include Authorization:', `Bearer ${token ? token.substring(0, 20) + '...' : 'MISSING'}`);
+      
       setIsLoading(true);
       setError(null);
       
-      // Fetch the rental details
+      // Fetch the rental details with detailed logging
       const rentalResponse = await fetch(`http://localhost:5000/api/rentals/${rentalId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -162,13 +169,27 @@ const PaymentPage = () => {
       });
       
       console.log('Rental fetch response status:', rentalResponse.status);
+      console.log('Rental fetch response headers:', Object.fromEntries(rentalResponse.headers.entries()));
       
       if (!rentalResponse.ok) {
-        const errorData = await rentalResponse.json().catch(() => ({}));
-        console.error('Failed to fetch rental:', errorData);
+        const errorText = await rentalResponse.text();
+        console.error('Rental fetch error response text:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { message: errorText || `HTTP ${rentalResponse.status}` };
+        }
+        
+        console.error('Parsed error data:', errorData);
         
         if (rentalResponse.status === 404) {
-          throw new Error('Rental not found. Please create a new rental.');
+          throw new Error('Rental not found. It may have been deleted or you may not have permission to access it.');
+        }
+        
+        if (rentalResponse.status === 401) {
+          throw new Error('Authentication failed. Please log in again.');
         }
         
         throw new Error(errorData.message || `Failed to fetch rental details: ${rentalResponse.status}`);
@@ -178,7 +199,7 @@ const PaymentPage = () => {
       console.log('Rental data fetched successfully:', rentalData);
       
       if (!rentalData || !rentalData._id) {
-        throw new Error('Invalid rental data received');
+        throw new Error('Invalid rental data received from server');
       }
       
       setRental(rentalData);
@@ -190,8 +211,19 @@ const PaymentPage = () => {
         return;
       }
       
-      // Fetch property details
-      const propertyId = rentalData.property._id || rentalData.property;
+      // Fetch property details - handle both populated and non-populated property data
+      let propertyId;
+      if (typeof rentalData.property === 'object' && rentalData.property._id) {
+        // Property is already populated
+        console.log('Property already populated in rental data');
+        setProperty(rentalData.property);
+        setTotalAmount(rentalData.totalAmount || 0);
+        return;
+      } else {
+        // Property is just an ID
+        propertyId = rentalData.property;
+      }
+      
       console.log('Fetching property with ID:', propertyId);
       
       const propertyResponse = await fetch(`http://localhost:5000/api/properties/${propertyId}`, {
@@ -201,10 +233,12 @@ const PaymentPage = () => {
         },
       });
       
+      console.log('Property fetch response status:', propertyResponse.status);
+      
       if (!propertyResponse.ok) {
         const errorData = await propertyResponse.json().catch(() => ({}));
         console.error('Failed to fetch property:', errorData);
-        throw new Error(errorData.message || 'Failed to fetch property details');
+        throw new Error(errorData.message || `Failed to fetch property details: ${propertyResponse.status}`);
       }
       
       const propertyData = await propertyResponse.json();
@@ -220,8 +254,13 @@ const PaymentPage = () => {
       toast.error(error.message || 'Unable to load payment details. Please try again.');
       
       // If rental not found, redirect to properties after delay
-      if (error.message.includes('not found')) {
-        setTimeout(() => navigate('/properties'), 2000);
+      if (error.message.includes('not found') || error.message.includes('404')) {
+        setTimeout(() => navigate('/properties'), 3000);
+      }
+      
+      // If auth error, redirect to login
+      if (error.message.includes('Authentication') || error.message.includes('401')) {
+        setTimeout(() => navigate('/login'), 2000);
       }
     } finally {
       setIsLoading(false);
@@ -325,7 +364,10 @@ const PaymentPage = () => {
           <div className="text-center">
             <p className="text-lg mb-2">Loading payment details...</p>
             <p className="text-sm text-gray-600">
-              {rentalId ? `Rental ID: ${rentalId}` : 'Creating rental...'}
+              {rentalId ? `Checking rental ID: ${rentalId}` : 'Setting up rental...'}
+            </p>
+            <p className="text-xs text-gray-400 mt-2">
+              User: {user?.name || 'Unknown'} | Token: {token ? 'Present' : 'Missing'}
             </p>
           </div>
         </div>
@@ -342,9 +384,11 @@ const PaymentPage = () => {
           <div className="text-center max-w-md mx-auto p-6">
             <h2 className="text-2xl font-bold text-red-600 mb-4">Payment Error</h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <p className="text-sm text-gray-500 mb-6">
-              {rentalId ? `Rental ID: ${rentalId}` : 'No rental ID provided'}
-            </p>
+            <div className="text-sm text-gray-500 mb-6 space-y-1">
+              <p>Rental ID: {rentalId || 'Not provided'}</p>
+              <p>User: {user?.name || 'Not logged in'}</p>
+              <p>Token: {token ? 'Present' : 'Missing'}</p>
+            </div>
             <div className="space-y-2">
               <Button 
                 onClick={() => navigate('/properties')} 
@@ -358,6 +402,13 @@ const PaymentPage = () => {
                 className="w-full"
               >
                 Go to Dashboard
+              </Button>
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline"
+                className="w-full"
+              >
+                Retry
               </Button>
             </div>
           </div>
