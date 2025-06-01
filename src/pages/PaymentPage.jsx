@@ -24,13 +24,12 @@ const paymentSchema = z.object({
 });
 
 const PaymentPage = () => {
-  const { propertyId } = useParams();
-  const urlParams = useParams(); // Move this to top level
+  const { rentalId } = useParams();
   const { user, token, getUserRentals, getUserProperties } = useUser();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rental, setRental] = useState(null);
   const [property, setProperty] = useState(null);
-  const [existingRental, setExistingRental] = useState(null);
   const [totalAmount, setTotalAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,16 +46,15 @@ const PaymentPage = () => {
   });
   
   useEffect(() => {
-    console.log('PaymentPage mounted with propertyId:', propertyId);
-    console.log('Current URL params:', urlParams); // Use the variable instead of calling hook
+    console.log('PaymentPage mounted with rentalId:', rentalId);
     console.log('User:', user);
     console.log('Token:', token ? 'Present' : 'Missing');
 
-    if (!propertyId) {
-      console.error('Property ID is missing from URL params');
-      setError('Property ID is missing');
-      toast.error("Property ID is missing from the URL");
-      navigate('/properties');
+    if (!rentalId) {
+      console.error('Rental ID is missing from URL params');
+      setError('Rental ID is missing');
+      toast.error("Rental ID is missing from the URL");
+      navigate('/dashboard');
       return;
     }
 
@@ -74,145 +72,83 @@ const PaymentPage = () => {
       return;
     }
     
-    const fetchProperty = async () => {
+    const fetchRentalAndProperty = async () => {
       try {
-        console.log(`Fetching property with ID: ${propertyId}`);
+        console.log(`Fetching rental with ID: ${rentalId}`);
         setIsLoading(true);
         setError(null);
         
-        // Fetch the property that the user wants to rent
-        const response = await fetch(`http://localhost:5000/api/properties/${propertyId}`, {
+        // Fetch the rental details
+        const rentalResponse = await fetch(`http://localhost:5000/api/rentals/${rentalId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
         
-        console.log('Property fetch response status:', response.status);
+        console.log('Rental fetch response status:', rentalResponse.status);
         
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
+        if (!rentalResponse.ok) {
+          const errorData = await rentalResponse.json().catch(() => ({}));
+          console.error('Failed to fetch rental:', errorData);
+          throw new Error(errorData.message || `Failed to fetch rental details: ${rentalResponse.status}`);
+        }
+        
+        const rentalData = await rentalResponse.json();
+        console.log('Rental data fetched successfully:', rentalData);
+        
+        if (!rentalData || !rentalData._id) {
+          throw new Error('Invalid rental data received');
+        }
+        
+        setRental(rentalData);
+        
+        // Check if payment is already completed
+        if (rentalData.paymentStatus === 'paid') {
+          toast.info("This rental has already been paid for");
+          setTimeout(() => navigate('/dashboard'), 1500);
+          return;
+        }
+        
+        // Fetch property details
+        const propertyId = rentalData.property._id || rentalData.property;
+        console.log('Fetching property with ID:', propertyId);
+        
+        const propertyResponse = await fetch(`http://localhost:5000/api/properties/${propertyId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!propertyResponse.ok) {
+          const errorData = await propertyResponse.json().catch(() => ({}));
           console.error('Failed to fetch property:', errorData);
-          throw new Error(errorData.message || `Failed to fetch property details: ${response.status}`);
+          throw new Error(errorData.message || 'Failed to fetch property details');
         }
         
-        const propertyData = await response.json();
+        const propertyData = await propertyResponse.json();
         console.log('Property data fetched successfully:', propertyData);
-        
-        if (!propertyData || !propertyData._id) {
-          throw new Error('Invalid property data received');
-        }
-        
         setProperty(propertyData);
         
-        // Calculate total amount (rent + deposit)
-        const calculatedTotal = (propertyData.rent || 0) + (propertyData.deposit || 0);
-        console.log('Calculated total amount:', calculatedTotal);
-        setTotalAmount(calculatedTotal);
+        // Set total amount from rental
+        setTotalAmount(rentalData.totalAmount || 0);
         
-        // Check if user already has a rental for this property
-        const rentalsResponse = await fetch('http://localhost:5000/api/rentals/user', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (rentalsResponse.ok) {
-          const userRentals = await rentalsResponse.json();
-          console.log('User rentals fetched:', userRentals);
-          
-          const rental = userRentals.find(r => 
-            r.property && 
-            (r.property._id === propertyId || r.property === propertyId) && 
-            r.status === 'active'
-          );
-          
-          if (rental) {
-            console.log('Existing rental found:', rental);
-            setExistingRental(rental);
-            
-            // If rental is already paid, redirect to dashboard
-            if (rental.paymentStatus === 'paid') {
-              toast.info("You've already completed payment for this property");
-              setTimeout(() => navigate('/dashboard'), 1500);
-            }
-          } else {
-            console.log('No existing rental found, creating new one');
-            // If no rental found, create one now
-            await createNewRental(propertyData);
-          }
-        } else {
-          console.error('Failed to fetch user rentals:', rentalsResponse.status);
-        }
       } catch (error) {
-        console.error('Error in fetchProperty:', error);
+        console.error('Error in fetchRentalAndProperty:', error);
         setError(error.message);
-        toast.error(error.message || 'Unable to load property details. Please try again.');
-        setTimeout(() => navigate('/properties'), 2000);
+        toast.error(error.message || 'Unable to load payment details. Please try again.');
+        setTimeout(() => navigate('/dashboard'), 2000);
       } finally {
         setIsLoading(false);
       }
     };
     
-    // Function to create a new rental if none exists
-    const createNewRental = async (propertyData) => {
-      try {
-        console.log('Creating new rental for property:', propertyData._id);
-        
-        const rentalData = {
-          propertyId: propertyData._id,
-          startDate: new Date().toISOString(),
-          endDate: new Date(new Date().setMonth(new Date().getMonth() + 11)).toISOString(), // 12 months rental
-          totalAmount: propertyData.rent + propertyData.deposit,
-        };
-        
-        console.log('Rental data to create:', rentalData);
-        
-        const rentalResponse = await fetch('http://localhost:5000/api/rentals', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify(rentalData),
-        });
-        
-        console.log('Rental creation response status:', rentalResponse.status);
-        
-        if (!rentalResponse.ok) {
-          const errorData = await rentalResponse.json().catch(() => ({}));
-          console.error('Error creating rental:', errorData);
-          
-          if (errorData.message === 'Property is already rented') {
-            toast.error('This property is no longer available for rent');
-            setTimeout(() => navigate('/properties'), 1500);
-            return;
-          }
-          throw new Error(errorData.message || 'Failed to create rental record');
-        }
-        
-        const newRentalData = await rentalResponse.json();
-        console.log('New rental created successfully:', newRentalData);
-        setExistingRental(newRentalData);
-        
-        // Refresh user rentals
-        if (getUserRentals) {
-          getUserRentals();
-        }
-        
-      } catch (error) {
-        console.error('Error creating rental:', error);
-        setError(error.message);
-        toast.error(error.message || 'Unable to initialize rental. Please try again.');
-      }
-    };
-    
-    fetchProperty();
-  }, [propertyId, user, token, navigate, getUserRentals, urlParams]);
+    fetchRentalAndProperty();
+  }, [rentalId, user, token, navigate]);
   
   const onSubmit = async (values) => {
-    if (!user || !property) {
+    if (!user || !rental || !property) {
       toast.error("Unable to process payment");
       return;
     }
@@ -221,7 +157,7 @@ const PaymentPage = () => {
     
     try {
       console.log('Processing payment with values:', values);
-      console.log('Existing rental:', existingRental);
+      console.log('Rental:', rental);
       
       // Create payment
       const paymentResponse = await fetch('http://localhost:5000/api/payments', {
@@ -231,7 +167,7 @@ const PaymentPage = () => {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          propertyId: property._id,
+          rentalId: rental._id,
           amount: totalAmount,
           paymentMethod: values.paymentMethod,
           cardDetails: values.paymentMethod === 'card' ? {
@@ -251,53 +187,47 @@ const PaymentPage = () => {
       const paymentData = await paymentResponse.json();
       console.log('Payment created successfully:', paymentData);
       
-      // Only update rental if we have an existing rental
-      if (existingRental && existingRental._id) {
-        // Update the existing rental with payment information
-        const updateResponse = await fetch(`http://localhost:5000/api/rentals/${existingRental._id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            paymentStatus: 'paid',
-            paymentId: paymentData._id,
-          }),
-        });
-        
-        if (!updateResponse.ok) {
-          const errorData = await updateResponse.json();
-          throw new Error(errorData.message || 'Failed to update rental payment status');
-        }
-        
-        const updatedRental = await updateResponse.json();
-        console.log('Rental updated with payment:', updatedRental);
-        
-        // Refresh user rentals and properties
-        getUserRentals();
-        getUserProperties();
-        
-        toast.success("Payment successful! Property rented successfully.");
-        
-        // Redirect to success page after delay
-        setTimeout(() => {
-          navigate('/payment-success', { 
-            state: { 
-              rental: {
-                ...updatedRental,
-                property: property,
-                paymentDate: new Date().toISOString(),
-                amount: totalAmount
-              },
-              paymentMethod: values.paymentMethod 
-            } 
-          });
-        }, 1000);
-      } else {
-        toast.error("Unable to update rental information. Please contact support.");
-        navigate('/dashboard');
+      // Update the rental with payment information
+      const updateResponse = await fetch(`http://localhost:5000/api/rentals/${rental._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          paymentStatus: 'paid',
+          paymentId: paymentData._id,
+        }),
+      });
+      
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json();
+        throw new Error(errorData.message || 'Failed to update rental payment status');
       }
+      
+      const updatedRental = await updateResponse.json();
+      console.log('Rental updated with payment:', updatedRental);
+      
+      // Refresh user rentals and properties
+      getUserRentals();
+      getUserProperties();
+      
+      toast.success("Payment successful! Property rented successfully.");
+      
+      // Redirect to success page after delay
+      setTimeout(() => {
+        navigate('/payment-success', { 
+          state: { 
+            rental: {
+              ...updatedRental,
+              property: property,
+              paymentDate: new Date().toISOString(),
+              amount: totalAmount
+            },
+            paymentMethod: values.paymentMethod 
+          } 
+        });
+      }, 1000);
     } catch (error) {
       console.error('Payment error:', error);
       toast.error(error.message || "Payment failed. Please try again.");
@@ -313,7 +243,7 @@ const PaymentPage = () => {
         <div className="flex-grow flex items-center justify-center">
           <div className="text-center">
             <p className="text-lg mb-2">Loading payment details...</p>
-            <p className="text-sm text-gray-600">Property ID: {propertyId || 'Not found'}</p>
+            <p className="text-sm text-gray-600">Rental ID: {rentalId || 'Not found'}</p>
           </div>
         </div>
         <Footer />
@@ -321,7 +251,7 @@ const PaymentPage = () => {
     );
   }
 
-  if (error || !propertyId) {
+  if (error || !rentalId) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -329,16 +259,16 @@ const PaymentPage = () => {
           <div className="text-center max-w-md mx-auto p-6">
             <h2 className="text-2xl font-bold text-red-600 mb-4">Payment Error</h2>
             <p className="text-gray-600 mb-4">
-              {error || 'Property ID is missing from the URL'}
+              {error || 'Rental ID is missing from the URL'}
             </p>
             <p className="text-sm text-gray-500 mb-6">
-              Property ID: {propertyId || 'Not provided'}
+              Rental ID: {rentalId || 'Not provided'}
             </p>
             <Button 
-              onClick={() => navigate('/properties')} 
+              onClick={() => navigate('/dashboard')} 
               className="w-full"
             >
-              Back to Properties
+              Back to Dashboard
             </Button>
           </div>
         </div>
@@ -347,19 +277,19 @@ const PaymentPage = () => {
     );
   }
   
-  if (!property) {
+  if (!rental || !property) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
           <div className="text-center">
-            <p className="text-lg mb-2">Property not found</p>
-            <p className="text-sm text-gray-600">Property ID: {propertyId}</p>
+            <p className="text-lg mb-2">Rental not found</p>
+            <p className="text-sm text-gray-600">Rental ID: {rentalId}</p>
             <Button 
-              onClick={() => navigate('/properties')} 
+              onClick={() => navigate('/dashboard')} 
               className="mt-4"
             >
-              Back to Properties
+              Back to Dashboard
             </Button>
           </div>
         </div>
@@ -552,7 +482,7 @@ const PaymentPage = () => {
                       <div>
                         <h3 className="font-medium">{property.title}</h3>
                         <p className="text-sm text-gray-500">{property.locality}, {property.city}</p>
-                        <p className="text-xs text-gray-400">ID: {propertyId}</p>
+                        <p className="text-xs text-gray-400">Rental ID: {rentalId}</p>
                       </div>
                     </div>
                     
@@ -560,12 +490,12 @@ const PaymentPage = () => {
                       <Calendar className="h-5 w-5 flex-shrink-0" />
                       <div>
                         <p className="text-sm">
-                          {new Date().toLocaleDateString('en-US', { 
+                          {new Date(rental.startDate).toLocaleDateString('en-US', { 
                             month: 'long', 
                             year: 'numeric' 
                           })}
                           {' - '}
-                          {new Date(new Date().setMonth(new Date().getMonth() + 11)).toLocaleDateString('en-US', { 
+                          {new Date(rental.endDate).toLocaleDateString('en-US', { 
                             month: 'long', 
                             year: 'numeric' 
                           })}
