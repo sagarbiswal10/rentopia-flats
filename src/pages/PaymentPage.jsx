@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -32,6 +31,8 @@ const PaymentPage = () => {
   const [property, setProperty] = useState(null);
   const [existingRental, setExistingRental] = useState(null);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   const form = useForm({
     resolver: zodResolver(paymentSchema),
@@ -45,8 +46,29 @@ const PaymentPage = () => {
   });
   
   useEffect(() => {
+    console.log('PaymentPage mounted with propertyId:', propertyId);
+    console.log('Current URL params:', useParams());
+    console.log('User:', user);
+    console.log('Token:', token ? 'Present' : 'Missing');
+
+    if (!propertyId) {
+      console.error('Property ID is missing from URL params');
+      setError('Property ID is missing');
+      toast.error("Property ID is missing from the URL");
+      navigate('/properties');
+      return;
+    }
+
     if (!user) {
+      console.log('User not logged in, redirecting to login');
       toast.error("You must be logged in to make a payment");
+      navigate('/login');
+      return;
+    }
+
+    if (!token) {
+      console.error('Authentication token is missing');
+      toast.error("Authentication token is missing. Please log in again.");
       navigate('/login');
       return;
     }
@@ -54,34 +76,51 @@ const PaymentPage = () => {
     const fetchProperty = async () => {
       try {
         console.log(`Fetching property with ID: ${propertyId}`);
+        setIsLoading(true);
+        setError(null);
         
         // Fetch the property that the user wants to rent
         const response = await fetch(`http://localhost:5000/api/properties/${propertyId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
         });
         
+        console.log('Property fetch response status:', response.status);
+        
         if (!response.ok) {
-          throw new Error(`Failed to fetch property details: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Failed to fetch property:', errorData);
+          throw new Error(errorData.message || `Failed to fetch property details: ${response.status}`);
         }
         
         const propertyData = await response.json();
-        console.log('Property data fetched:', propertyData);
+        console.log('Property data fetched successfully:', propertyData);
+        
+        if (!propertyData || !propertyData._id) {
+          throw new Error('Invalid property data received');
+        }
+        
         setProperty(propertyData);
         
         // Calculate total amount (rent + deposit)
-        setTotalAmount(propertyData.rent + propertyData.deposit);
+        const calculatedTotal = (propertyData.rent || 0) + (propertyData.deposit || 0);
+        console.log('Calculated total amount:', calculatedTotal);
+        setTotalAmount(calculatedTotal);
         
         // Check if user already has a rental for this property
         const rentalsResponse = await fetch('http://localhost:5000/api/rentals/user', {
           headers: {
             'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
         });
         
         if (rentalsResponse.ok) {
           const userRentals = await rentalsResponse.json();
+          console.log('User rentals fetched:', userRentals);
+          
           const rental = userRentals.find(r => 
             r.property && 
             (r.property._id === propertyId || r.property === propertyId) && 
@@ -98,26 +137,36 @@ const PaymentPage = () => {
               setTimeout(() => navigate('/dashboard'), 1500);
             }
           } else {
+            console.log('No existing rental found, creating new one');
             // If no rental found, create one now
-            createNewRental(propertyData);
+            await createNewRental(propertyData);
           }
+        } else {
+          console.error('Failed to fetch user rentals:', rentalsResponse.status);
         }
       } catch (error) {
-        console.error('Error fetching property:', error);
-        toast.error('Unable to load property details. Please try again.');
-        setTimeout(() => navigate('/properties'), 1500);
+        console.error('Error in fetchProperty:', error);
+        setError(error.message);
+        toast.error(error.message || 'Unable to load property details. Please try again.');
+        setTimeout(() => navigate('/properties'), 2000);
+      } finally {
+        setIsLoading(false);
       }
     };
     
     // Function to create a new rental if none exists
     const createNewRental = async (propertyData) => {
       try {
+        console.log('Creating new rental for property:', propertyData._id);
+        
         const rentalData = {
           propertyId: propertyData._id,
           startDate: new Date().toISOString(),
           endDate: new Date(new Date().setMonth(new Date().getMonth() + 11)).toISOString(), // 12 months rental
           totalAmount: propertyData.rent + propertyData.deposit,
         };
+        
+        console.log('Rental data to create:', rentalData);
         
         const rentalResponse = await fetch('http://localhost:5000/api/rentals', {
           method: 'POST',
@@ -128,9 +177,12 @@ const PaymentPage = () => {
           body: JSON.stringify(rentalData),
         });
         
+        console.log('Rental creation response status:', rentalResponse.status);
+        
         if (!rentalResponse.ok) {
-          const errorData = await rentalResponse.json();
+          const errorData = await rentalResponse.json().catch(() => ({}));
           console.error('Error creating rental:', errorData);
+          
           if (errorData.message === 'Property is already rented') {
             toast.error('This property is no longer available for rent');
             setTimeout(() => navigate('/properties'), 1500);
@@ -139,26 +191,24 @@ const PaymentPage = () => {
           throw new Error(errorData.message || 'Failed to create rental record');
         }
         
-        const rentalData2 = await rentalResponse.json();
-        console.log('New rental created:', rentalData2);
-        setExistingRental(rentalData2);
+        const newRentalData = await rentalResponse.json();
+        console.log('New rental created successfully:', newRentalData);
+        setExistingRental(newRentalData);
         
         // Refresh user rentals
-        getUserRentals();
+        if (getUserRentals) {
+          getUserRentals();
+        }
         
       } catch (error) {
         console.error('Error creating rental:', error);
+        setError(error.message);
         toast.error(error.message || 'Unable to initialize rental. Please try again.');
       }
     };
     
-    if (propertyId) {
-      fetchProperty();
-    } else {
-      toast.error('Property ID is missing');
-      navigate('/dashboard');
-    }
-  }, [propertyId, user, navigate, token, getUserRentals]);
+    fetchProperty();
+  }, [propertyId, user, token, navigate, getUserRentals]);
   
   const onSubmit = async (values) => {
     if (!user || !property) {
@@ -255,12 +305,62 @@ const PaymentPage = () => {
     }
   };
   
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg mb-2">Loading payment details...</p>
+            <p className="text-sm text-gray-600">Property ID: {propertyId || 'Not found'}</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !propertyId) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-grow flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto p-6">
+            <h2 className="text-2xl font-bold text-red-600 mb-4">Payment Error</h2>
+            <p className="text-gray-600 mb-4">
+              {error || 'Property ID is missing from the URL'}
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Property ID: {propertyId || 'Not provided'}
+            </p>
+            <Button 
+              onClick={() => navigate('/properties')} 
+              className="w-full"
+            >
+              Back to Properties
+            </Button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+  
   if (!property) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
-          <p>Loading payment details...</p>
+          <div className="text-center">
+            <p className="text-lg mb-2">Property not found</p>
+            <p className="text-sm text-gray-600">Property ID: {propertyId}</p>
+            <Button 
+              onClick={() => navigate('/properties')} 
+              className="mt-4"
+            >
+              Back to Properties
+            </Button>
+          </div>
         </div>
         <Footer />
       </div>
@@ -451,6 +551,7 @@ const PaymentPage = () => {
                       <div>
                         <h3 className="font-medium">{property.title}</h3>
                         <p className="text-sm text-gray-500">{property.locality}, {property.city}</p>
+                        <p className="text-xs text-gray-400">ID: {propertyId}</p>
                       </div>
                     </div>
                     
@@ -476,11 +577,11 @@ const PaymentPage = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span>Monthly Rent</span>
-                        <span>₹{property.rent.toLocaleString()}</span>
+                        <span>₹{property.rent?.toLocaleString() || '0'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Security Deposit</span>
-                        <span>₹{property.deposit.toLocaleString()}</span>
+                        <span>₹{property.deposit?.toLocaleString() || '0'}</span>
                       </div>
                       <Separator />
                       <div className="flex justify-between font-bold">
