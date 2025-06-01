@@ -1,4 +1,3 @@
-
 const Payment = require('../models/paymentModel');
 const Property = require('../models/propertyModel');
 const Rental = require('../models/rentalModel');
@@ -8,49 +7,46 @@ const asyncHandler = require('express-async-handler');
 // @route   POST /api/payments
 // @access  Private
 const createPayment = asyncHandler(async (req, res) => {
-  const { propertyId, amount, paymentMethod } = req.body;
+  const { rentalId, propertyId, amount, paymentMethod } = req.body;
 
-  // Check if property exists
-  const property = await Property.findById(propertyId);
-  if (!property) {
-    res.status(404);
-    throw new Error('Property not found');
-  }
+  let property;
+  let rental;
 
-  // Check if property is already rented and payment completed by someone else
-  const existingCompletedRental = await Rental.findOne({
-    property: propertyId,
-    paymentStatus: 'paid',
-    status: 'active'
-  });
-
-  if (existingCompletedRental) {
+  // If rentalId is provided, use it to get the rental and property
+  if (rentalId) {
+    rental = await Rental.findById(rentalId).populate('property');
+    if (!rental) {
+      res.status(404);
+      throw new Error('Rental not found');
+    }
+    property = rental.property;
+  } else if (propertyId) {
+    // Fallback to propertyId if no rentalId
+    property = await Property.findById(propertyId);
+    if (!property) {
+      res.status(404);
+      throw new Error('Property not found');
+    }
+  } else {
     res.status(400);
-    throw new Error('Property is already rented');
+    throw new Error('Either rentalId or propertyId must be provided');
   }
 
   // Create payment
   const payment = await Payment.create({
     user: req.user._id,
-    property: propertyId,
+    property: property._id,
+    rental: rental ? rental._id : null,
     amount,
     paymentMethod,
-    status: 'completed', // For simplicity, in a real app, this would be integrated with a payment gateway
+    status: 'completed',
   });
 
-  // Find user's pending rental for this property
-  const userRental = await Rental.findOne({
-    property: propertyId,
-    user: req.user._id,
-    status: 'active',
-    paymentStatus: 'pending'
-  });
-
-  if (userRental) {
-    // Update rental payment status
-    userRental.paymentStatus = 'paid';
-    userRental.paymentId = payment._id;
-    await userRental.save();
+  // If rental exists, update its payment status
+  if (rental) {
+    rental.paymentStatus = 'paid';
+    rental.paymentId = payment._id;
+    await rental.save();
 
     // Update property availability
     property.available = false;

@@ -141,20 +141,23 @@ const getRentalById = asyncHandler(async (req, res) => {
     .populate('property')
     .populate('user', 'name email phone');
 
-  if (rental) {
-    // Check if user is authorized to view this rental
-    if (rental.user._id.toString() !== req.user._id.toString() && 
-        rental.property.user.toString() !== req.user._id.toString() && 
-        !req.user.isAdmin) {
-      res.status(401);
-      throw new Error('Not authorized to access this rental');
-    }
-
-    res.json(rental);
-  } else {
+  if (!rental) {
     res.status(404);
     throw new Error('Rental not found');
   }
+
+  // More permissive authorization check
+  const isRenter = rental.user._id.toString() === req.user._id.toString();
+  const isPropertyOwner = rental.property && rental.property.user && 
+                         rental.property.user.toString() === req.user._id.toString();
+  const isAdmin = req.user.isAdmin;
+
+  if (!isRenter && !isPropertyOwner && !isAdmin) {
+    res.status(401);
+    throw new Error('Not authorized to access this rental');
+  }
+
+  res.json(rental);
 });
 
 // @desc    Get all rentals (admin only)
